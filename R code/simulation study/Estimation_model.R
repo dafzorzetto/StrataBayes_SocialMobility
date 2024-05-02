@@ -6,21 +6,21 @@
 #                       Y=sample_1[["Y_obs"]],
 #                       R=5000, burnin=5000)
 
-model_setting_1 <- lapply(1:10, function(s) PostTreatGibbs(
+model_setting_1 <- lapply(1:10, function(s) StrataBayes_Gibbs(
   X=scenario_1[[s]][["data"]][["X"]],
   X_w=scenario_1[[s]][["data"]][["X"]], 
   Tr=scenario_1[[s]][["data"]][["Tr"]], 
   P=scenario_1[[s]][["data"]][["P_obs"]],
   Y=scenario_1[[s]][["data"]][["Y_obs"]],
   R=5000, burnin=5000)) 
-model_setting_2_correct <- lapply(1:10, function(s) PostTreatGibbs(
+model_setting_2_correct <- lapply(1:10, function(s) StrataBayes_Gibbs(
   X=scenario_2[[s]][["data"]][["X"]][,c(1,4:5)],
   X_w=scenario_2[[s]][["data"]][["X"]][,1:3], 
   Tr=scenario_2[[s]][["data"]][["Tr"]], 
   P=scenario_2[[s]][["data"]][["P_obs"]],
   Y=scenario_2[[s]][["data"]][["Y_obs"]],
   R=5000, burnin=5000)) 
-model_setting_2_all <- lapply(1:10, function(s) PostTreatGibbs(
+model_setting_2_all <- lapply(1:10, function(s) StrataBayes_Gibbs(
   X=scenario_2[[s]][["data"]][["X"]],
   X_w=scenario_2[[s]][["data"]][["X"]], 
   Tr=scenario_2[[s]][["data"]][["Tr"]], 

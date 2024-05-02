@@ -193,11 +193,15 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     reg_mu_1_mis = X_1%*%beta_0
     
     C = Y_1 - X_1%*%(eta_1[1:p,]) - P_1%*%t(eta_1[p+2,])
-    mu_P0_cl_prova <- sigma_P0_cl[V_1] * (reg_mu_1_mis*sigma_0*sigma_y_0[V_1]
-                                        +(sigma_0^2)*sigma_y_0[V_1]*eta_1[p+1,V_1]
-                                        *(diag(C[,V_1])))/((sigma_y_0[V_1]+sigma_0*(eta_1[p+1,V_1]^2))^2)
+    #mu_P0_cl <- sigma_P0_cl[V_1] * (reg_mu_1_mis*sigma_0*sigma_y_0[V_1]
+    #                               +(sigma_0^2)*sigma_y_0[V_1]*eta_1[p+1,V_1]
+    #                               *(diag(C[,V_1])))/((sigma_y_0[V_1]+sigma_0*(eta_1[p+1,V_1]^2))^2)
     
-    P_0_update[Tr == 1] <- rnorm(n1, mu_P0_cl_prova, sd=sqrt(sigma_P0_cl))
+    mu_P0_cl <- sigma_P0_cl[V_1] * (reg_mu_1_mis*(sigma_y_0[V_1])/(eta_1[p+1,V_1]^2)
+                                    +(sigma_0)*eta_1[p+1,V_1]*(diag(C[,V_1])))/
+      (sigma_y_0[V_1]/(eta_1[p+1,V_1]^2)+sigma_0)
+    
+    P_0_update[Tr == 1] <- rnorm(n1, mu_P0_cl, sd=sqrt(sigma_P0_cl))
     
     ### --- Impute P(1) ----
     # sample from normale distribution of P(1)
