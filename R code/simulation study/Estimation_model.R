@@ -97,6 +97,35 @@ plot_var_comparison<-function(sim, estimation, n_scenario){
   abline(coef = c(0,1), col="red")
 }
 
+hist_var_comparison<-function(sim, estimation, n_scenario){
+  
+  x_mix=min(sim$P_0,apply(estimation$P0_POST,1,median))
+  x_max=max(sim$P_0,apply(estimation$P0_POST,1,median))
+  hist(sim$P_0, breaks=100, xlim=c(x_min,x_max),
+       main=paste0("scenario ", n_scenario, " - P(0)"),
+       xlab="simulated")
+  hist(apply(estimation$P0_POST,1,median), 
+       breaks=100, xlim=c(x_min,x_max),
+       main=paste0("scenario ", n_scenario, " - P(0)"),
+       xlab=="estimated")
+
+  
+  plot(sim$P_1,apply(estimation$P1_POST,1,median), 
+       pch=19, cex=0.5, main=paste0("scenario ", n_scenario, " - P(1)"),
+       xlab="simulated", ylab="estimated")
+  abline(coef = c(0,1), col="red")
+  
+  plot(sim$Y_0,apply(estimation$Y0_POST,1,median), 
+       pch=19, cex=0.5, main=paste0("scenario ", n_scenario, " - Y(0)"),
+       xlab="simulated", ylab="estimated")
+  abline(coef = c(0,1), col="red")
+  
+  plot(sim$P_1,apply(estimation$Y1_POST,1,median), 
+       pch=19, cex=0.5, main=paste0("scenario ", n_scenario, " - Y(1)"),
+       xlab="simulated", ylab="estimated")
+  abline(coef = c(0,1), col="red")
+}
+
 par(mfrow=c(2,2))
 plot_var_comparison(sim=scenario_1[[1]]$simulated_full,
                     estimation=model_setting_1[[1]],
