@@ -9,7 +9,11 @@
  - **`Simulations.R`**:
 
    generate different settings
- - **`Estimation_models.R`**:
+ - **`Estimation_model.R`**:
 
    estimate proposed model for the different simulated settings
+
+ - **`Estimation_model_parallel.R`**:
+
+   estimate proposed model for the different simulated settings using library **`parallel`**
  
