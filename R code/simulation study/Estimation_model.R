@@ -6,7 +6,9 @@
 #                       Y=sample_1[["Y_obs"]],
 #                       R=5000, burnin=5000)
 
-model_setting_1 <- lapply(1:10, function(s) StrataBayes_Gibbs(
+samples=1
+
+model_setting_1 <- lapply(1:samples, function(s) StrataBayes_Gibbs(
   X=scenario_1[[s]][["data"]][["X"]],
   X_w=scenario_1[[s]][["data"]][["X"]], 
   Tr=scenario_1[[s]][["data"]][["Tr"]], 
@@ -14,7 +16,7 @@ model_setting_1 <- lapply(1:10, function(s) StrataBayes_Gibbs(
   Y=scenario_1[[s]][["data"]][["Y_obs"]],
   R=5000, burnin=5000,
   dim_cluster=10)) 
-model_setting_2_correct <- lapply(1:10, function(s) StrataBayes_Gibbs(
+model_setting_2_correct <- lapply(1:samples, function(s) StrataBayes_Gibbs(
   X=scenario_2[[s]][["data"]][["X"]][,c(1,4:5)],
   X_w=scenario_2[[s]][["data"]][["X"]][,1:3], 
   Tr=scenario_2[[s]][["data"]][["Tr"]], 
@@ -22,7 +24,7 @@ model_setting_2_correct <- lapply(1:10, function(s) StrataBayes_Gibbs(
   Y=scenario_2[[s]][["data"]][["Y_obs"]],
   R=5000, burnin=5000,
   dim_cluster=10)) 
-model_setting_2_all <- lapply(1:10, function(s) StrataBayes_Gibbs(
+model_setting_2_all <- lapply(1:samples, function(s) StrataBayes_Gibbs(
   X=scenario_2[[s]][["data"]][["X"]],
   X_w=scenario_2[[s]][["data"]][["X"]], 
   Tr=scenario_2[[s]][["data"]][["Tr"]], 
@@ -67,4 +69,42 @@ bias_2_correct = bias_funct(data_sim = scenario_2,
                         model_est=model_setting_2_correct)
 bias_2_all = bias_funct(data_sim = scenario_2, 
                         model_est=model_setting_2_all)
+
+sapply(bias_1,function(i) summary(i))
+sapply(bias_2_correct,function(i) summary(i))
+sapply(bias_2_all,function(i) summary(i))
+
+
+plot_var_comparison<-function(sim, estimation, n_scenario){
+  plot(sim$P_0,apply(estimation$P0_POST,1,median), 
+       pch=19, cex=0.5, main=paste0("scenario ", n_scenario, " - P(0)"),
+       xlab="simulated", ylab="estimated")
+  abline(coef = c(0,1), col="red")
+  
+  plot(sim$P_1,apply(estimation$P1_POST,1,median), 
+       pch=19, cex=0.5, main=paste0("scenario ", n_scenario, " - P(1)"),
+       xlab="simulated", ylab="estimated")
+  abline(coef = c(0,1), col="red")
+  
+  plot(sim$Y_0,apply(estimation$Y0_POST,1,median), 
+       pch=19, cex=0.5, main=paste0("scenario ", n_scenario, " - Y(0)"),
+       xlab="simulated", ylab="estimated")
+  abline(coef = c(0,1), col="red")
+  
+  plot(sim$P_1,apply(estimation$Y1_POST,1,median), 
+       pch=19, cex=0.5, main=paste0("scenario ", n_scenario, " - Y(1)"),
+       xlab="simulated", ylab="estimated")
+  abline(coef = c(0,1), col="red")
+}
+
+par(mfrow=c(2,2))
+plot_var_comparison(sim=scenario_1[[1]]$simulated_full,
+                    estimation=model_setting_1[[1]],
+                    n_scenario=1)
+plot_var_comparison(sim=scenario_2[[1]]$simulated_full,
+                    estimation=model_setting_2_correct[[1]],
+                    n_scenario=2)
+plot_var_comparison(sim=scenario_2[[1]]$simulated_full,
+                    estimation=model_setting_2_all[[1]],
+                    n_scenario=2)
 
