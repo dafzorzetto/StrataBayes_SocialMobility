@@ -48,8 +48,8 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     mu_eta_1 = matrix(0, p+2)
   } 
   if(is.null(sigma_eps)){
-    sigma_eps_0 = diag(3, p_w, p_w)
-    sigma_eps_1 = diag(3, p_w, p_w)
+    sigma_eps_0 = diag(5, p_w, p_w)
+    sigma_eps_1 = diag(5, p_w, p_w)
   }
   inv_sigma_eps_0 = solve(sigma_eps_0)
   inv_sigma_eps_1 = solve(sigma_eps_1)
@@ -92,6 +92,11 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
   V_0 <- V_0_impute[Tr == 0,drop = FALSE]
   V_1 <- V_1_impute[Tr == 1,drop = FALSE]
   eps_0 <- eps_1 <- rmvnorm(dim_cluster-1, mu_eps_0, sigma_eps_0)
+  V_0_all <- V_1_all <- rep(NA,n)
+  
+  #### PROOF
+  #V_0=scenario_2[[1]]$parameters$V[Tr == 0]
+  #V_1=scenario_2[[1]]$parameters$V[Tr == 1]
   
   # Precompute the fixed quantities
   
@@ -193,14 +198,6 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     reg_mu_1_mis = X_1%*%beta_0
     
     C = Y_1 - X_1%*%(eta_1[1:p,]) - P_1%*%t(eta_1[p+2,])
-    #mu_P0_cl <- sigma_P0_cl[V_1] * (reg_mu_1_mis*sigma_0*sigma_y_0[V_1]
-    #                               +(sigma_0^2)*sigma_y_0[V_1]*eta_1[p+1,V_1]
-    #                               *(diag(C[,V_1])))/((sigma_y_0[V_1]+sigma_0*(eta_1[p+1,V_1]^2))^2)
-    
-    #mu_P0_cl <- sigma_P0_cl[V_1] * (reg_mu_1_mis*(sigma_y_0[V_1])/(eta_1[p+1,V_1]^2)
-    #                                +(sigma_0)*eta_1[p+1,V_1]*(diag(C[,V_1])))/
-    #  (sigma_y_0[V_1]/(eta_1[p+1,V_1]^2)+sigma_0)
-    
     mu_P0_cl <- sigma_P0_cl[V_1]*(reg_mu_1_mis/sigma_0 +eta_1[p+1,V_1]*(diag(C[,V_1]))/sigma_y_0[V_1])
     
     P_0_update[Tr == 1] <- rnorm(n1, mu_P0_cl, sd=sqrt(sigma_P0_cl))
@@ -229,9 +226,13 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
       rmultinom(1,1,exp(lambda_norm_1[i,]+log(lambda_1_temp[i,]))))
     V_1 <- c(c(1:dim_cluster)%*%V_1_MN)
     
+    #### PROOF
+    #V_0=scenario_2[[1]]$parameters$V[Tr == 0]
+    #V_1=scenario_2[[1]]$parameters$V[Tr == 1]
+    
     ### --- Augmentation scheme Z(0) ----
     gamma_0_Z <- gamma_function(lambda_0_temp)
-    Z_0 <- sapply(1:n0, function(i) c(rtruncnorm(V_0[i]-1,b=0,mean=gamma_0_Z[i,1:(V_0[i]-1)]),   ###*(V_0[i]>1), check if useful
+    Z_0 <- sapply(1:n0, function(i) c(rtruncnorm(V_0[i]-1,b=0,mean=gamma_0_Z[i,1:(V_0[i]-1)])*(V_0[i]>1),   ###*(V_0[i]>1), check if useful
                                        rtruncnorm(1,a=0,mean=gamma_0_Z[i,V_0[i]]), rep(NA,dim_cluster-V_0[i])) )
     
     ### --- Augmentation scheme Z(1) ----
@@ -296,7 +297,8 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     lambda_0_mis_temp <- lambda_function(X_1_w,eps_0)
     V_0_mis_MN <- sapply(1:n1, function(i) rmultinom(1,1,lambda_0_mis_temp[i,]))
     V_0_mis <- c(c(1:dim_cluster)%*%V_0_mis_MN)
-    V_0_all <- ifelse(Tr == 0, V_0 , V_0_mis)
+    V_0_all[Tr==0] <- V_0
+    V_0_all[Tr==1] <- V_0_mis  #####V_1 ####
     
     X_Y_0_temp <- cbind(X,P_0_update)
     Y_0_impute <- rnorm(n, rowSums(X_Y_0_temp*t(eta_0[,V_0_all])),sqrt(sigma_y_0[V_0_all]))
@@ -306,7 +308,8 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     lambda_1_mis_temp <- lambda_function(X_0_w,eps_1)
     V_1_mis_MN <- sapply(1:n0, function(i) rmultinom(1,1,lambda_1_mis_temp[i,]))
     V_1_mis <- c(c(1:dim_cluster)%*%V_1_mis_MN)
-    V_1_all <- ifelse(Tr == 1, V_1 , V_1_mis)
+    V_1_all[Tr==1] <- V_1
+    V_1_all[Tr==0] <- V_1_mis     ######V_0 ####V_1_mis
     
     X_Y_1_temp <- cbind(X,P_0_update, P_1_update)
     Y_1_impute <- rnorm(n, rowSums(X_Y_1_temp*t(eta_1[,V_1_all])),sqrt(sigma_y_1[V_1_all]))
