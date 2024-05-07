@@ -128,9 +128,10 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
   estimation_partition<-function(V_post){
     
     # using Variation of Information as loss function
-    cluster_post = partition.BNPdens(list(clust=t(V_post)),dist = "VI")$partitions[1,]
+    cluster_post_vi = partition.BNPdens(list(clust=t(V_post)),dist = "VI")$partitions[1,]
+    cluster_post_binder = partition.BNPdens(list(clust=t(V_post)),dist = "Binder")$partitions[1,]
 
-    return(cluster_post)
+    return(list(cluster_post_vi=cluster_post_vi,cluster_post_binder=cluster_post_binder))
   }
   
   #progress bar
@@ -232,7 +233,7 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     
     ### --- Augmentation scheme Z(0) ----
     gamma_0_Z <- gamma_function(lambda_0_temp)
-    Z_0 <- sapply(1:n0, function(i) c(rtruncnorm(V_0[i]-1,b=0,mean=gamma_0_Z[i,1:(V_0[i]-1)])*(V_0[i]>1),   ###*(V_0[i]>1), check if useful
+    Z_0 <- sapply(1:n0, function(i) c(rtruncnorm(V_0[i]-1,b=0,mean=gamma_0_Z[i,1:(V_0[i]-1)])*(V_0[i]>1), 
                                        rtruncnorm(1,a=0,mean=gamma_0_Z[i,V_0[i]]), rep(NA,dim_cluster-V_0[i])) )
     
     ### --- Augmentation scheme Z(1) ----
@@ -242,16 +243,16 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     
     ### --- Posterior Eps(0) ----
     # product X_tilde and Z_tilde
-    prod_X_Z_tilde_0 <- lapply(1:(dim_cluster-1), function(m) (Z_0[m,V_0>=m])%*%(X_0[V_0>=m,]))
+    prod_X_Z_tilde_0 <- lapply(1:(dim_cluster-1), function(m) (Z_0[m,V_0>=m])%*%(X_0_w[V_0>=m,]))
     Sigma_eps_0 <- lapply(1:(dim_cluster-1), function(m) 
-      solve(crossprod(matrix(X_0[V_0>=m,], ncol=p)) + inv_sigma_eps_0))
+      solve(crossprod(matrix(X_0_w[V_0>=m,], ncol=p_w)) + inv_sigma_eps_0))
     eps_0 <- t(sapply(1:(dim_cluster-1), function(m)
       rmvnorm(1, Sigma_eps_0[[m]]%*%(inv_sigma_eps_0%*%mu_eps_0+t(prod_X_Z_tilde_0[[m]])),Sigma_eps_0[[m]])))
     
     ### --- Posterior Eps(1) ----
-    prod_X_Z_tilde_1 <- lapply(1:(dim_cluster-1), function(m) (Z_1[m,V_1>=m])%*%(X_1[V_1>=m,]))
+    prod_X_Z_tilde_1 <- lapply(1:(dim_cluster-1), function(m) (Z_1[m,V_1>=m])%*%(X_1_w[V_1>=m,]))
     Sigma_eps_1 <- lapply(1:(dim_cluster-1), function(m) 
-      solve(crossprod(matrix(X_1[V_1>=m,], ncol=p)) + inv_sigma_eps_1))
+      solve(crossprod(matrix(X_1_w[V_1>=m,], ncol=p_w)) + inv_sigma_eps_1))
     eps_1 <- t(sapply(1:(dim_cluster-1), function(m)
       rmvnorm(1, Sigma_eps_1[[m]]%*%(inv_sigma_eps_1%*%mu_eps_1+t(prod_X_Z_tilde_1[[m]])),Sigma_eps_1[[m]])))
     
@@ -298,7 +299,7 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     V_0_mis_MN <- sapply(1:n1, function(i) rmultinom(1,1,lambda_0_mis_temp[i,]))
     V_0_mis <- c(c(1:dim_cluster)%*%V_0_mis_MN)
     V_0_all[Tr==0] <- V_0
-    V_0_all[Tr==1] <- V_0_mis  #####V_1 ####
+    V_0_all[Tr==1] <- V_0_mis
     
     X_Y_0_temp <- cbind(X,P_0_update)
     Y_0_impute <- rnorm(n, rowSums(X_Y_0_temp*t(eta_0[,V_0_all])),sqrt(sigma_y_0[V_0_all]))
@@ -309,7 +310,7 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     V_1_mis_MN <- sapply(1:n0, function(i) rmultinom(1,1,lambda_1_mis_temp[i,]))
     V_1_mis <- c(c(1:dim_cluster)%*%V_1_mis_MN)
     V_1_all[Tr==1] <- V_1
-    V_1_all[Tr==0] <- V_1_mis     ######V_0 ####V_1_mis
+    V_1_all[Tr==0] <- V_1_mis 
     
     X_Y_1_temp <- cbind(X,P_0_update, P_1_update)
     Y_1_impute <- rnorm(n, rowSums(X_Y_1_temp*t(eta_1[,V_1_all])),sqrt(sigma_y_1[V_1_all]))
