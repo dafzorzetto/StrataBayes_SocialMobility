@@ -1,5 +1,5 @@
 n <- 500 # units for each sample
-samples <- 10 # repetition of each setting (number of samples)
+samples <- 20 # repetition of each setting (number of samples)
 
 
 ### simulation setting only binomials
@@ -190,6 +190,26 @@ plot_potential_Y<-function(sim_Y0, sim_Y1, sim_V, n_scenario){
          col=3)
 }
 
+hist_simulation<- function(setting){
+  par(mfrow=c(2,2))
+  hist(setting[[1]]$simulated_full$P_0, breaks = 90, xlab="", ylab="", main="P(0)")
+  hist(setting[[1]]$simulated_full$P_1, breaks = 90, xlab="", ylab="", main="P(1)")
+  hist(setting[[1]]$simulated_full$Y_0, breaks = 90, xlab="", ylab="", main="Y(0)")
+  hist(setting[[1]]$simulated_full$Y_1, breaks = 90, xlab="", ylab="", main="Y(1)")
+}
+
+hist_simulation_condTR<- function(setting){
+  par(mfrow=c(2,2))
+  hist(setting[[1]]$simulated_full$P_0[setting[[1]]$data$Tr==0], 
+       breaks = 70, xlab="", ylab="", main="P(0) obs")
+  hist(setting[[1]]$simulated_full$P_1[setting[[1]]$data$Tr==1],
+       breaks = 70, xlab="", ylab="", main="P(1)  obs")
+  hist(setting[[1]]$simulated_full$Y_0[setting[[1]]$data$Tr==0],
+       breaks = 70, xlab="", ylab="", main="Y(0)  obs")
+  hist(setting[[1]]$simulated_full$Y_1[setting[[1]]$data$Tr==1],
+       breaks = 70, xlab="", ylab="", main="Y(1)  obs")
+}
+
 par(mfrow=c(2,2))
 plot_potential_P(scenario_1[[1]]$simulated_full$P_0,
                  scenario_1[[1]]$simulated_full$P_1,
@@ -210,8 +230,10 @@ plot_potential_Y(scenario_2[[1]]$simulated_full$Y_0,
                  n_scenario=2)
 
 
+hist_simulation(scenario_1)
+hist_simulation(scenario_2)
 
-hist(scenario_1[[1]]$simulated_full$P_0, breaks = 200)
-hist(scenario_1[[1]]$simulated_full$Y_0, breaks = 200)
-hist(scenario_1[[1]]$simulated_full$Y_1, breaks = 200)
-hist(scenario_1[[1]]$simulated_full$Y_0, breaks = 200)
+hist_simulation_condTR(scenario_1)
+hist_simulation_condTR(scenario_2)
+
+
