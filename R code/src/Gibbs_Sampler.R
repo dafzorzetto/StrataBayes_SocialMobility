@@ -5,12 +5,12 @@ library(BNPmix)
 library(mvtnorm)
 
 StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000, 
-                           sigma_beta=NULL, mu_beta=NULL, 
-                           gamma_1=1, gamma_2=1,
-                           lambda_eta=NULL, mu_eta=NULL,
-                           gamma_y_1=1, gamma_y_2=1,
-                           mu_eps = NULL, sigma_eps = NULL,
-                           dim_cluster=10) {
+                              sigma_beta=NULL, mu_beta=NULL, 
+                              gamma_1=1, gamma_2=1,
+                              lambda_eta=NULL, mu_eta=NULL,
+                              gamma_y_1=1, gamma_y_2=1,
+                              mu_eps = NULL, sigma_eps = NULL,
+                              dim_cluster=20) {
   
   set.seed(1)
   
@@ -43,6 +43,8 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     lambda_eta_0 = diag(2, p+1, p+1)
     lambda_eta_1 = diag(2, p+2, p+2)
   }
+  inv_lambda_eta_0 = solve(lambda_eta_0)
+  inv_lambda_eta_1 = solve(lambda_eta_1)
   if(is.null(mu_eta)){
     mu_eta_0 = matrix(0, p+1)
     mu_eta_1 = matrix(0, p+2)
@@ -123,14 +125,14 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     phi_gamma_argument[phi_gamma_argument>=1] <- 0.999
     return(qnorm(phi_gamma_argument))
   }
-
+  
   # point estimate parition
   estimation_partition<-function(V_post){
     
     # using Variation of Information as loss function
     cluster_post_vi = partition.BNPdens(list(clust=t(V_post)),dist = "VI")$partitions[1,]
     cluster_post_binder = partition.BNPdens(list(clust=t(V_post)),dist = "Binder")$partitions[1,]
-
+    
     return(list(cluster_post_vi=cluster_post_vi,cluster_post_binder=cluster_post_binder))
   }
   
@@ -178,7 +180,7 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     #sample from the posterior of beta
     beta_1 <- mvrnorm(n = 1, mu = mu_beta_1_new, Sigma = EPS_beta_1_new)
     
-    #reg_mu_0 is the mean of the posterior of the P(0)
+    #reg_mu_1 is the mean of the posterior of the P(1)
     #reg_mu_1 = beta_1%*%t(X_1)
     reg_mu_1 = X_1%*%beta_1
     
@@ -212,7 +214,7 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     lambda_0_temp <- lambda_function(X_0_w,eps_0)
     eta_0_X <- X_Y_0%*%eta_0
     lambda_norm_0 <- matrix(dnorm(rep(Y_0,dim_cluster),c(eta_0_X),rep(sigma_y_0, each=n0),log=TRUE),
-                       ncol=dim_cluster)
+                            ncol=dim_cluster)
     V_0_MN <- sapply(1:n0, function(i)
       rmultinom(1,1,exp(lambda_norm_0[i,]+log(lambda_0_temp[i,]))))
     V_0 <- c(c(1:dim_cluster)%*%V_0_MN)
@@ -234,7 +236,7 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     ### --- Augmentation scheme Z(0) ----
     gamma_0_Z <- gamma_function(lambda_0_temp)
     Z_0 <- sapply(1:n0, function(i) c(rtruncnorm(V_0[i]-1,b=0,mean=gamma_0_Z[i,1:(V_0[i]-1)])*(V_0[i]>1), 
-                                       rtruncnorm(1,a=0,mean=gamma_0_Z[i,V_0[i]]), rep(NA,dim_cluster-V_0[i])) )
+                                      rtruncnorm(1,a=0,mean=gamma_0_Z[i,V_0[i]]), rep(NA,dim_cluster-V_0[i])) )
     
     ### --- Augmentation scheme Z(1) ----
     gamma_1_Z <- gamma_function(lambda_1_temp)
@@ -263,10 +265,10 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     cross_XY0_V <- lapply(1:dim_cluster, function(m)
       t(matrix(X_Y_0[V_0==m, ],ncol=p+1))%*%Y_0[V_0==m])
     Sigma_eta_V_new <- lapply(1:dim_cluster, function(m)
-      solve(crossX_Y0_V[[m]]/sigma_y_0[m] + lambda_eta_0 ))
+      solve(crossX_Y0_V[[m]]/sigma_y_0[m] + inv_lambda_eta_0 ))
     
     eta_0 <- sapply(1:dim_cluster, function(m)
-      rmvnorm(1, Sigma_eta_V_new[[m]]%*%(lambda_eta_0%*%mu_eta_0 + cross_XY0_V[[m]]/sigma_y_0[m]),Sigma_eta_V_new[[m]]))
+      rmvnorm(1, Sigma_eta_V_new[[m]]%*%(inv_lambda_eta_0%*%mu_eta_0 + cross_XY0_V[[m]]/sigma_y_0[m]),Sigma_eta_V_new[[m]]))
     
     # sigma_Y_0
     n0_V <- rowSums(V_0_MN)
@@ -282,10 +284,10 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
     cross_XY1_V <- lapply(1:dim_cluster, function(m)
       t(matrix(X_Y_1[V_1==m, ],ncol=p+2))%*%Y_1[V_1==m])
     Sigma_eta_V_new <- lapply(1:dim_cluster, function(m)
-      solve(crossX_Y1_V[[m]]/sigma_y_1[m] + lambda_eta_1 ))
+      solve(crossX_Y1_V[[m]]/sigma_y_1[m] + inv_lambda_eta_1 ))
     
     eta_1 <- sapply(1:dim_cluster, function(m)
-      rmvnorm(1, Sigma_eta_V_new[[m]]%*%(lambda_eta_1%*%mu_eta_1 + cross_XY1_V[[m]]/sigma_y_1[m]),Sigma_eta_V_new[[m]]))
+      rmvnorm(1, Sigma_eta_V_new[[m]]%*%(inv_lambda_eta_1%*%mu_eta_1 + cross_XY1_V[[m]]/sigma_y_1[m]),Sigma_eta_V_new[[m]]))
     
     n1_V <- rowSums(V_1_MN)
     par_gamma <- (Y_1 - X_Y_1%*%eta_1)^2
