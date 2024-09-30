@@ -16,4 +16,9 @@
  - **`Estimation_model_parallel.R`**:
 
    estimate proposed model for the different simulated settings using library **`parallel`**
- 
+   
+  - **`Estimation_model_parallel_windows.R`**:
+
+   estimate proposed model for the different simulated settings using library **`doparallel`**
+
+
