@@ -1,0 +1,114 @@
+df <- read.csv("C:\\Users\\paolo\\OneDrive\\Documents\\Harvard\\data\\AUM_edu_pm25_X_county.csv")
+df <- subset(df, select = -c(X,Unnamed..0))
+df <- na.omit(df)
+#standardize values that are not percentages
+df$med_hhinc1990 <- scale(df$med_hhinc1990)
+df$popdensity2000 <- scale(df$popdensity2000)
+df$mean_winter_prcp <- scale(df$mean_winter_prcp)
+df$mean_winter_tmin <- scale(df$mean_winter_tmin)
+df$mean_summer_prcp <- scale(df$mean_summer_prcp)
+df$mean_summer_tmax <- scale(df$mean_summer_tmax)
+
+#create the treatment
+df$pm25_1982_binary <- ifelse(df$pm25_1982 >= median(df$pm25_1982),1,0)
+
+length(df$county_state)
+names(df)
+
+X <- cbind(1,df$frac_coll_plus2000, df$med_hhinc1990, df$popdensity2000, df$poor_share1990,
+           df$share_black2000, df$share_white2000, df$share_hisp2000, df$share_asian2000,
+           df$emp2000, df$census_region, df$mean_winter_prcp, df$mean_winter_tmin,
+           df$mean_summer_prcp, df$mean_summer_tmax)
+
+
+######
+#high school application
+high_school_application <- StrataBayes_Gibbs(X=X,
+                  X_w=X, 
+                  Tr=df$pm25_1982_binary, 
+                  P=df$hs_pooled_pooled_p25,
+                  Y=df$kfr_pooled_pooled_p25,
+                  sigma_beta=NULL, mu_beta=NULL, 
+                  gamma_1=1, gamma_2=1,
+                  lambda_eta=NULL, mu_eta=NULL,
+                  gamma_y_1=1, gamma_y_2=1,
+                  mu_eps = NULL, sigma_eps = NULL,
+                  R=5000, burnin=5000,
+                  dim_cluster=5)
+
+
+save(high_school_application, file="high_school_application.Rdata")
+
+hist(rowMeans(high_school_application$P0_POST),breaks=1000)
+hist(rowMeans(high_school_application$P1_POST),breaks=1000)
+hist(rowMeans(high_school_application$P0_POST)[df$pm25_1982_binary==1],breaks=1000)
+hist(rowMeans(high_school_application$P1_POST)[df$pm25_1982_binary==0],breaks=1000)
+hist(rowMeans(high_school_application$Y0_POST),breaks=1000)
+hist(rowMeans(high_school_application$Y1_POST),breaks=1000)
+
+
+plot(rowMeans(high_school_application$P0_POST),rowMeans(high_school_application$P1_POST))
+#points(high_school_application$P0_POST[high_school_application$estimation_partition_V0==2],
+#       high_school_application$P1_POST[high_school_application$estimation_partition_V01==2], pch=19,
+#       col=2)
+plot(rowMeans(high_school_application$Y0_POST),rowMeans(high_school_application$Y1_POST))
+
+
+
+M <- rowMeans(high_school_application$P1_POST)-
+  rowMeans(high_school_application$P0_POST)
+ATE<- rowMeans(high_school_application$Y1_POST)-
+  rowMeans(high_school_application$Y0_POST)
+matrix <- as.data.frame(cbind(M, ATE, X))
+
+dissociative <- matrix[which(M<=0.01&M>=-0.01),]
+associative_plus <- matrix[which(M > 0.01),]
+associative_minus <- matrix[which(M <= -0.01),]
+
+
+
+summary(associative_minus$ATE)
+summary(associative_plus$ATE)
+summary(dissociative$ATE)
+boxplot(associative_minus$ATE, dissociative$ATE, associative_plus$ATE,
+        ylim = c(-0.17, 0.13),
+        names = c("Associative Minus", "Dissociative", "Associative Plus"))
+abline(h = 0, col = "red")
+
+
+######
+#community college application
+community_college_application <- StrataBayes_Gibbs(X=X,
+                                                   X_w=X, 
+                                                   Tr=df$pm25_1982_binary, 
+                                                   P=df$comcoll_pooled_pooled_p25,
+                                                   Y=df$kfr_pooled_pooled_p25,
+                                                   sigma_beta=NULL, mu_beta=NULL, 
+                                                   gamma_1=1, gamma_2=1,
+                                                   lambda_eta=NULL, mu_eta=NULL,
+                                                   gamma_y_1=1, gamma_y_2=1,
+                                                   mu_eps = NULL, sigma_eps = NULL,
+                                                   R=5000, burnin=5000,
+                                                   dim_cluster=5)
+
+save(community_college_application, file="community_college_application.Rdata")
+
+
+##### college application
+college_application <- StrataBayes_Gibbs(X=X,
+                                         X_w=X, 
+                                         Tr=df$pm25_1982_binary, 
+                                         P=df$coll_pooled_pooled_p25,
+                                         Y=df$kfr_pooled_pooled_p25,
+                                         sigma_beta=NULL, mu_beta=NULL, 
+                                         gamma_1=1, gamma_2=1,
+                                         lambda_eta=NULL, mu_eta=NULL,
+                                         gamma_y_1=1, gamma_y_2=1,
+                                         mu_eps = NULL, sigma_eps = NULL,
+                                         R=5000, burnin=5000,
+                                         dim_cluster=5)
+
+
+save(college_application, file="college_application.Rdata")
+
+
