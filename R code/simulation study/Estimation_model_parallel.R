@@ -1,5 +1,6 @@
 
 library(parallel)
+source("./src/Gibbs_Sampler_240726.R")
 
 StrataBayes_Gibbs_parallel_X<- function(data, R=5000, burnin=5000, dim_cluster=10){
   
@@ -35,82 +36,28 @@ StrataBayes_Gibbs_parallel_X_Xw<- function(data, R=5000, burnin=5000, dim_cluste
                                     
 }
 
+system.time(
 model_setting_1 <- mclapply(scenario_1, StrataBayes_Gibbs_parallel_X,
-                            R=5000, burnin=5000,
+                            R=2000, burnin=4000,
                             dim_cluster=10,
-                            mc.cores = 5)
-model_setting_2_correct <- mclapply(scenario_2, StrataBayes_Gibbs_parallel_X,
-                                    R=5000, burnin=5000,
-                                    dim_cluster=10,
-                                    mc.cores = 5)
-model_setting_2_all <- mclapply(scenario_2, StrataBayes_Gibbs_parallel_X_Xw,
-                                R=5000, burnin=5000,
-                                dim_cluster=10,
-                                mc.cores = 5)
-
-# with P(1)-P(0)
-model_setting_1_3 <- mclapply(scenario_1_3, StrataBayes_Gibbs_parallel_X,
-                            R=5000, burnin=5000,
-                            dim_cluster=10,
-                            mc.cores = 5)
-model_setting_2_3 <- mclapply(scenario_2_3, StrataBayes_Gibbs_parallel_X,
-                              R=5000, burnin=5000,
+                            mc.cores = 6)
+)
+model_setting_2_a <- mclapply(scenario_2, StrataBayes_Gibbs_parallel_X,
+                              R=2000, burnin=4000,
                               dim_cluster=10,
-                              mc.cores = 5)
-
-# with more X
-model_setting_1_3_X <- mclapply(scenario_1_3_X, StrataBayes_Gibbs_parallel_X,
-                              R=5000, burnin=5000,
+                              mc.cores = 6)
+model_setting_2_b <- mclapply(scenario_2, StrataBayes_Gibbs_parallel_X_Xw,
+                              R=2000, burnin=4000,
                               dim_cluster=10,
-                              mc.cores = 5)
-model_setting_2_3_X <- mclapply(scenario_2_3_X, StrataBayes_Gibbs_parallel_X,
-                              R=5000, burnin=5000,
+                              mc.cores = 6)
+model_setting_3_a <- mclapply(scenario_3, StrataBayes_Gibbs_parallel_X,
+                              R=2000, burnin=4000,
                               dim_cluster=10,
-                              mc.cores = 5)
-
-# with f(X) non linear
-model_setting_1_3_2_X <- mclapply(scenario_1_3_2_X, StrataBayes_Gibbs_parallel_X,
-                                R=5000, burnin=5000,
-                                dim_cluster=10,
-                                mc.cores = 5)
-model_setting_2_3_2_X <- mclapply(scenario_2_3_2_X, StrataBayes_Gibbs_parallel_X,
-                                R=5000, burnin=5000,
-                                dim_cluster=10,
-                                mc.cores = 5)
-model_setting_2_3_2_X_w <- mclapply(scenario_2_3_2_X, StrataBayes_Gibbs_parallel_X_Xw,
-                                  R=5000, burnin=5000,
-                                  dim_cluster=10,
-                                  mc.cores = 5)
-
-# with [P(1)-P(0)]^2
-model_setting_1_2 <- mclapply(scenario_1_2, StrataBayes_Gibbs_parallel_X,
-                              R=5000, burnin=5000,
+                              mc.cores = 6)
+model_setting_3_b <- mclapply(scenario_3, StrataBayes_Gibbs_parallel_X_Xw,
+                              R=2000, burnin=4000,
                               dim_cluster=10,
-                              mc.cores = 5)
-model_setting_2_2 <- mclapply(scenario_2_2, StrataBayes_Gibbs_parallel_X,
-                              R=5000, burnin=5000,
-                              dim_cluster=10,
-                              mc.cores = 5)
-
-# with more X
-model_setting_1_2_X <- mclapply(scenario_1_2_X, StrataBayes_Gibbs_parallel_X,
-                                R=5000, burnin=5000,
-                                dim_cluster=10,
-                                mc.cores = 5)
-model_setting_2_2_X <- mclapply(scenario_2_2_X, StrataBayes_Gibbs_parallel_X,
-                                R=5000, burnin=5000,
-                                dim_cluster=10,
-                                mc.cores = 5)
-
-# with f(X) non linear
-model_setting_1_2_2_X <- mclapply(scenario_1_2_2_X, StrataBayes_Gibbs_parallel_X,
-                                  R=5000, burnin=5000,
-                                  dim_cluster=12,
-                                  mc.cores = 5)
-model_setting_2_2_2_X <- mclapply(scenario_2_2_2_X, StrataBayes_Gibbs_parallel_X,
-                                  R=5000, burnin=5000,
-                                  dim_cluster=12,
-                                  mc.cores = 5)
+                              mc.cores = 6)
 
 #############################################################################
 
@@ -144,36 +91,15 @@ bias_funct<-function(data_sim, model_est){
 
 bias_1 = bias_funct(data_sim = scenario_1, 
                     model_est=model_setting_1)
-bias_2_correct = bias_funct(data_sim = scenario_2, 
-                            model_est=model_setting_2_correct)
-bias_2_all = bias_funct(data_sim = scenario_2, 
-                        model_est=model_setting_2_all)
+bias_2_a = bias_funct(data_sim = scenario_2, 
+                      model_est=model_setting_2_a)
+bias_2_b = bias_funct(data_sim = scenario_2, 
+                      model_est=model_setting_2_b)
+bias_3_a = bias_funct(data_sim = scenario_3, 
+                      model_est=model_setting_3_a)
+bias_3_b = bias_funct(data_sim = scenario_3, 
+                      model_est=model_setting_3_b)
 
-bias_1_3 = bias_funct(data_sim = scenario_1_3, 
-                    model_est=model_setting_1_3)
-bias_1_2 = bias_funct(data_sim = scenario_1_2, 
-                      model_est=model_setting_1_2)
-bias_1_3_X = bias_funct(data_sim = scenario_1_3_X, 
-                      model_est=model_setting_1_3_X)
-bias_1_2_X = bias_funct(data_sim = scenario_1_2_X, 
-                        model_est=model_setting_1_2_X)
-bias_1_3_2_X = bias_funct(data_sim = scenario_1_3_2_X, 
-                        model_est=model_setting_1_3_2_X)
-bias_1_2_2_X = bias_funct(data_sim = scenario_1_2_2_X, 
-                        model_est=model_setting_1_2_2_X)
-
-bias_2_3 = bias_funct(data_sim = scenario_2_3, 
-                      model_est=model_setting_2_3)
-bias_2_2 = bias_funct(data_sim = scenario_2_2, 
-                      model_est=model_setting_2_2)
-bias_2_3_X = bias_funct(data_sim = scenario_2_3_X, 
-                        model_est=model_setting_2_3_X)
-bias_2_2_X = bias_funct(data_sim = scenario_2_2_X, 
-                        model_est=model_setting_2_2_X)
-bias_2_3_2_X = bias_funct(data_sim = scenario_2_3_2_X, 
-                          model_est=model_setting_2_3_2_X)
-bias_2_2_2_X = bias_funct(data_sim = scenario_2_2_2_X, 
-                          model_est=model_setting_2_2_2_X)
 
 sapply(bias_1,function(i) summary(i))
 sapply(bias_2_correct,function(i) summary(i))

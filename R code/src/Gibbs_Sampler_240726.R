@@ -367,27 +367,35 @@ StrataBayes_Gibbs <- function(X, X_w, Tr, P, Y, R=5000, burnin=1000,
   
   ### --- point estimation of cluster partition ----
   
-  estimation_partition_V0 <- estimation_partition(V0_POST)
+  #estimation_partition_V0 <- estimation_partition(V0_POST)
   print("estimation_partition_V0 done")
-  estimation_partition_V1 <- estimation_partition(V1_POST)
+  #estimation_partition_V1 <- estimation_partition(V1_POST)
   print("estimation_partition_V1 done")
   
-  return(list(P0_POST = P0_POST,
-              P1_POST = P1_POST,
-              BETA_0_POST=BETA_0_POST,
-              BETA_1_POST = BETA_1_POST,
-              SIGMA_0_POST = SIGMA_0_POST,
-              SIGMA_1_POST = SIGMA_1_POST,
-              Y0_POST = Y0_POST,
-              Y1_POST = Y1_POST,
-              ETA_0_POST = ETA_0_POST,
-              ETA_1_POST = ETA_1_POST,
-              SIGMA_Y_0_POST = SIGMA_Y_0_POST,
-              SIGMA_Y_1_POST = SIGMA_Y_1_POST,
-              V0_POST = V0_POST,
-              V1_POST = V1_POST,
-              estimation_partition_V0 = estimation_partition_V0,
-              estimation_partition_V1 = estimation_partition_V1
+  return(list(#P0_POST = P0_POST,
+              P0_POST_median = apply(P0_POST,1,median),
+              P0_POST_mean = apply(P0_POST,1,mean),
+              #P1_POST = P1_POST,
+              P1_POST_median = apply(P1_POST,1,median),
+              P1_POST_mean = apply(P1_POST,1,mean),
+              #BETA_0_POST=BETA_0_POST,
+              #BETA_1_POST = BETA_1_POST,
+              #SIGMA_0_POST = SIGMA_0_POST,
+              #SIGMA_1_POST = SIGMA_1_POST,
+              #Y0_POST = Y0_POST,
+              Y0_POST_median = apply(Y0_POST,1,median),
+              Y0_POST_mean = apply(Y0_POST,1,mean),
+              #Y1_POST = Y1_POST,
+              Y1_POST_median = apply(Y1_POST,1,median),
+              Y1_POST_mean = apply(Y1_POST,1,mean)
+              #ETA_0_POST = ETA_0_POST,
+              #ETA_1_POST = ETA_1_POST,
+              #SIGMA_Y_0_POST = SIGMA_Y_0_POST,
+              #SIGMA_Y_1_POST = SIGMA_Y_1_POST,
+              #V0_POST = V0_POST,
+              #V1_POST = V1_POST,
+              #estimation_partition_V0 = estimation_partition_V0,
+              #estimation_partition_V1 = estimation_partition_V1
   ))
   
 }

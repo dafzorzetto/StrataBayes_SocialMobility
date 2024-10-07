@@ -1,10 +1,10 @@
-n <- 500 # units for each sample
-samples <- 50 # repetition of each setting (number of samples)
+#n <- 500 # units for each sample
+samples <- 200 # repetition of each setting (number of samples)
 
 
 ### --- scenarios based on first one ---
 
-sim_1_3_2_X <- function(seed, n) {
+sim_funct_1 <- function(seed, n) {
   # set seed for reproducibility
   set.seed(seed)
   
@@ -88,11 +88,11 @@ sim_1_3_2_X <- function(seed, n) {
   ))
 }
 
-scenario_1_3_2_X <- lapply(1:samples, function(c) sim_1_3_2_X(seed = c, n = n))
+scenario_1 <- lapply(1:samples, function(c) sim_funct_1(seed = c, n = 500))
 
 ### --- scenarios based on second one ---
 
-sim_2_3_2_X <- function(seed, n) {
+sim_funct_2 <- function(seed, n) {
   # set seed for reproducibility
   set.seed(seed)
   
@@ -183,9 +183,9 @@ sim_2_3_2_X <- function(seed, n) {
   ))
 }
 
-scenario_2_3_2_X <- lapply(1:samples, function(c) sim_2_3_2_X(seed = c, n = n))
+scenario_2 <- lapply(1:samples, function(c) sim_funct_2(seed = c, n = 500))
 
-sim_2_3_3_X <- function(seed, n) {
+sim_funct_3 <- function(seed, n) {
   # set seed for reproducibility
   set.seed(seed)
   
@@ -286,7 +286,7 @@ sim_2_3_3_X <- function(seed, n) {
   ))
 }
 
-scenario_2_3_3_X <- lapply(1:samples, function(c) sim_2_3_3_X(seed = c, n = n))
+scenario_3 <- lapply(1:samples, function(c) sim_funct_3(seed = c, n = 300))
 
 
 # plots ####
@@ -357,13 +357,13 @@ hist_simulation(scenario_2_3_2_X, "Scenario 2.3.2 X")
 hist_simulation(scenario_2_3_3_X, "Scenario 2.3.3 X")
 
 
-hist_simulation_condTR(scenario_1)
-hist_simulation_condTR(scenario_1_3_X)
-hist_simulation_condTR(scenario_1_2_X)
+#hist_simulation_condTR(scenario_1)
+#hist_simulation_condTR(scenario_1_3_X)
+#hist_simulation_condTR(scenario_1_2_X)
 
-hist_simulation_condTR(scenario_2)
-hist_simulation_condTR(scenario_2_3_X)
-hist_simulation_condTR(scenario_2_2_X)
+#hist_simulation_condTR(scenario_2)
+#hist_simulation_condTR(scenario_2_3_X)
+#hist_simulation_condTR(scenario_2_2_X)
 
 
 
