@@ -69,20 +69,18 @@ bias_funct<-function(data_sim, model_est){
   
   ATE_Y <- sapply(1:samples, function(s)
     mean(data_sim[[s]]$simulated_full$Y_1 - data_sim[[s]]$simulated_full$Y_0 -
-           (apply(model_est[[s]]$Y1_POST,1, median)-
-              apply(model_est[[s]]$Y0_POST,1, median))))
+           (model_est[[s]]$Y1_POST_median - model_est[[s]]$Y0_POST_median)))
   ATE_P <- sapply(1:samples, function(s)
     mean(data_sim[[s]]$simulated_full$P_1 - data_sim[[s]]$simulated_full$P_0 -
-           (apply(model_est[[s]]$P1_POST,1, median)-
-              apply(model_est[[s]]$P0_POST,1, median))))
+           (model_est[[s]]$P1_POST_median - model_est[[s]]$P0_POST_median)))
   bias_P0 <- sapply(1:samples, function(s)
-    mean(data_sim[[s]]$simulated_full$P_0 - apply(model_est[[s]]$P0_POST,1, median)))
+    mean(data_sim[[s]]$simulated_full$P_0 - model_est[[s]]$P0_POST_mean))
   bias_P1 <- sapply(1:samples, function(s)
-    mean(data_sim[[s]]$simulated_full$P_1 - apply(model_est[[s]]$P1_POST,1, median))) 
+    mean(data_sim[[s]]$simulated_full$P_1 - model_est[[s]]$P1_POST_mean)) 
   bias_Y0 <- sapply(1:samples, function(s)
-    mean(data_sim[[s]]$simulated_full$Y_0 - apply(model_est[[s]]$Y0_POST,1, median)))
+    mean(data_sim[[s]]$simulated_full$Y_0 - model_est[[s]]$Y0_POST_mean))
   bias_Y1 <- sapply(1:samples, function(s)
-    mean(data_sim[[s]]$simulated_full$Y_1 - apply(model_est[[s]]$Y1_POST,1, median)))
+    mean(data_sim[[s]]$simulated_full$Y_1 - model_est[[s]]$Y1_POST_mean))
   
   return(list(bias_ATE_Y = ATE_Y, bias_ATE_P = ATE_P, 
               bias_P0 = bias_P0, bias_P1=bias_P1, 
@@ -102,8 +100,10 @@ bias_3_b = bias_funct(data_sim = scenario_3,
 
 
 sapply(bias_1,function(i) summary(i))
-sapply(bias_2_correct,function(i) summary(i))
-sapply(bias_2_all,function(i) summary(i))
+sapply(bias_2_a,function(i) summary(i))
+sapply(bias_2_b,function(i) summary(i))
+sapply(bias_3_a,function(i) summary(i))
+sapply(bias_3_b,function(i) summary(i))
 
 
 plot_var_comparison<-function(sim, estimation, n_scenario, V=NULL){
@@ -188,51 +188,16 @@ boxplot_allbias<-function(biases){
 }
 
 
-par(mfrow=c(2,2))
-sample_number=5
-plot_var_comparison(sim=scenario_1[[sample_number]]$simulated_full,
-                    estimation=model_setting_1[[sample_number]],
-                    n_scenario=1)
-plot_var_comparison(sim=scenario_2[[sample_number]]$simulated_full,
-                    estimation=model_setting_2_correct[[sample_number]],
-                    n_scenario=2)
-plot_var_comparison(sim=scenario_2[[sample_number]]$simulated_full,
-                    estimation=model_setting_2_all[[sample_number]],
-                    n_scenario=2)
+#par(mfrow=c(2,2))
+#sample_number=5
+#plot_var_comparison(sim=scenario_1[[sample_number]]$simulated_full,
+#                    estimation=model_setting_1[[sample_number]],
+#                    n_scenario=1)
 
-boxplot_allbias(biases=list(bias_1, bias_1_3, bias_1_2, 
-                            bias_1_3_X, bias_1_3_2_X))
 
-boxplot_allbias(biases=list(bias_2_correct, bias_2_all,
-                            bias_2_3, bias_2_2, 
-                            bias_2_3_X, bias_2_3_2_X))
+boxplot_allbias(biases=list(bias_1, bias_2_a, bias_2_b, 
+                            bias_3_a, bias_3_b))
+
 
 ##############################################################################
-
-# clusters analysis
-
-cluster_estimated<-function(estimation){
-  
-  V0_vi_clusters <- sapply(1:samples, function(i) 
-    max(estimation[[i]]$estimation_partition_V0$cluster_post_vi))
-  V0_binder_clusters <- sapply(1:samples, function(i) 
-    max(estimation[[i]]$estimation_partition_V0$cluster_post_binder))
-  V1_vi_clusters <- sapply(1:samples, function(i) 
-    max(estimation[[i]]$estimation_partition_V1$cluster_post_vi))
-  V1_binder_clusters <- sapply(1:samples, function(i) 
-    max(estimation[[i]]$estimation_partition_V1$cluster_post_binder))
-  
-  par(mfrow=c(2,2))
-  barplot(table(V0_vi_clusters), main="V(0) - VI")
-  barplot(table(V0_binder_clusters), main="V(0) - Binder")
-  barplot(table(V1_vi_clusters), main="V(1) - VI")
-  barplot(table(V1_binder_clusters), main="V(1) - Binder")
-  
-  return(list(V0_vi_clusters = V0_vi_clusters, V0_binder_clusters = V0_binder_clusters,
-              V1_vi_clusters = V1_vi_clusters, V1_binder_clusters = V1_binder_clusters))
-}
-
-cluster_estimated(model_setting_1)
-cluster_estimated(model_setting_2_all)
-cluster_estimated(model_setting_2_correct)
 
