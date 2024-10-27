@@ -303,6 +303,8 @@ biases=list(bias_1, bias_1_slm_x,
             bias_2_b,bias_2_slm_x,
             bias_3_b, bias_3_slm_x)
 dim_setttings=length(biases)
+
+sett_mod_label<- c("1 \n Y_BNP", "1 \n SLM","2 \n Y_BNP", "2 \n SLM","3 \n Y_BNP", "3 \n SLM")
 bias_ATE_Y_all <- cbind(bias=c(sapply(biases, function(j) j$bias_ATE_Y)), 
                         set=rep(1:dim_setttings, each=samples))
 bias_ATE_P_all <- cbind(bias=c(sapply(biases, function(j) j$bias_ATE_P)), 
@@ -313,8 +315,10 @@ colour_palette=c("#FAD401","#E09600","#FAD401","#E09600","#FAD401","#E09600")
 par(mfrow=c(1,1))
 boxplot(bias ~ set, data=bias_ATE_Y_all, 
         main="Y(1)-Y(0)", ylab="bias", xlab="Scenarios",
-        ylim=c(-5,5), #500
+        ylim=c(-4,4), #500
+        xaxe=FALSE,
         col=colour_palette[1:dim_setttings])
+axis(1, at=1:6, labels=sett_mod_label)
 abline(h=0, col="#E02700")
 
 boxplot(bias ~ set, data=bias_ATE_P_all, 
@@ -323,5 +327,61 @@ boxplot(bias ~ set, data=bias_ATE_P_all,
         col=colour_palette[1:dim_setttings])
 abline(h=0, col="#E02700")
 
+#############################################################################
+bias_ATE_Y_all <- as.data.frame(cbind(bias=c(sapply(biases, function(j) j$bias_ATE_Y)), 
+                                      Q=(rep(c(rep("Y_BNP",samples),rep("SLM",samples)),3)),
+                                      cov=paste0("scenario ",rep(1:3,each=samples*2))))
+bias_ATE_P_all <- as.data.frame(cbind(bias=c(sapply(biases, function(j) j$bias_ATE_P)), 
+                                      Q=(rep(c(rep("Y_BNP",samples),rep("SLM",samples)),3)),
+                                      cov=paste0("scenario ",rep(1:3,each=samples*2))))
+
+bias_ATE_Y_all$cov=as.character(bias_ATE_Y_all$cov)
+bias_ATE_Y_all$Q=as.character(bias_ATE_Y_all$Q)
+bias_ATE_Y_all$bias=as.numeric(bias_ATE_Y_all$bias)
+bias_ATE_P_all$cov=as.character(bias_ATE_P_all$cov)
+bias_ATE_P_all$Q=as.character(bias_ATE_P_all$Q)
+bias_ATE_P_all$bias=as.numeric(bias_ATE_P_all$bias)
+
+colour_palette=c("#FAD401","#E09600")
+
+ggplot(bias_ATE_P_all, aes(x=cov, y=bias, fill=Q)) + 
+  scale_fill_manual(values=colour_palette, name="")+
+  geom_boxplot(lwd=0.3,fatten = 1.5, outlier.size = 0.3)+
+  geom_hline(yintercept = 0, col="#007399", size=0.4) +
+  theme(panel.background = element_rect(fill='white'),
+        plot.background = element_rect(fill ="white"),
+        #panel.grid.minor = element_line(color = "grey"),
+        axis.title = element_text(size=14),
+        legend.text=element_text(size=10),
+        plot.title = element_text(hjust = 0.2),
+        title =element_text(size=18),
+        legend.background = element_rect(fill='transparent'),
+        panel.grid.major = element_line(color = "grey",size = 0.1))+
+  ylab("Bias P(1)-P(0)") +
+  xlab("")
+
+ggplot(bias_ATE_Y_all, aes(x=cov, y=bias, fill=Q)) + 
+  scale_fill_manual(values=colour_palette, name="")+
+  geom_boxplot(lwd=0.3,fatten = 1.5, outlier.size = 0.3)+ 
+  coord_cartesian(ylim = c(-4, 4))+
+  geom_hline(yintercept = 0, col="#007399", size=0.4) +
+  theme(panel.background = element_rect(fill='white'),
+        plot.background = element_rect(fill ="white"),
+        #panel.grid.minor = element_line(color = "grey"),
+        axis.title = element_text(size=14),
+        legend.text=element_text(size=10),
+        plot.title = element_text(hjust = 0.2),
+        title =element_text(size=18),
+        legend.background = element_rect(fill='transparent'),
+        panel.grid.major = element_line(color = "grey",size = 0.1))+
+  ylab("Bias Y(1)-Y(0)") +
+  xlab("")
+
+table_results<-cbind(median_P=sapply(biases, function(x) median(x$bias_ATE_P)),
+                     sd_P=sapply(biases, function(x) IQR(x$bias_ATE_P)),
+                     median_Y=sapply(biases, function(x) median(x$bias_ATE_Y)),
+                     sd_Y=sapply(biases, function(x) IQR(x$bias_ATE_Y)))
+
+xtable(t(table_results), digits=4)
 ##############################################################################
 
