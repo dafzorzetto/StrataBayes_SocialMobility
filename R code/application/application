@@ -1,6 +1,7 @@
-df <- read.csv("AUM_edu_pm25_X_county.csv") #modify accordingly, data can be found in "data" folder
+df <- read.csv("C:\\Users\\paolo\\OneDrive\\Documents\\Harvard\\data\\AUM_edu_pm25_X_county.csv")
 df <- subset(df, select = -c(X,Unnamed..0))
 df <- na.omit(df)
+
 #standardize values that are not percentages
 df$med_hhinc1990 <- scale(df$med_hhinc1990)
 df$popdensity2000 <- scale(df$popdensity2000)
@@ -55,26 +56,26 @@ plot(rowMeans(high_school_application$Y0_POST),rowMeans(high_school_application$
 
 
 
-M <- rowMeans(high_school_application$P1_POST)-
+M_hs <- rowMeans(high_school_application$P1_POST)-
   rowMeans(high_school_application$P0_POST)
-ATE<- rowMeans(high_school_application$Y1_POST)-
+ATE_hs<- rowMeans(high_school_application$Y1_POST)-
   rowMeans(high_school_application$Y0_POST)
-matrix <- as.data.frame(cbind(M, ATE, X))
+matrix_hs <- as.data.frame(cbind(M_hs, ATE_hs, X))
 
-dissociative <- matrix[which(M<=0.01&M>=-0.01),]
-associative_plus <- matrix[which(M > 0.01),]
-associative_minus <- matrix[which(M <= -0.01),]
+dissociative_hs <- matrix_hs[which(M_hs<=0.01&M_hs>=-0.01),]
+associative_plus_hs <- matrix_hs[which(M_hs > 0.01),]
+associative_minus_hs <- matrix_hs[which(M_hs <= -0.01),]
 
 
 
-summary(associative_minus$ATE)
-summary(associative_plus$ATE)
-summary(dissociative$ATE)
-boxplot(associative_minus$ATE, dissociative$ATE, associative_plus$ATE,
-        ylim = c(-0.17, 0.13),
+summary(associative_minus_hs$ATE_hs)
+summary(associative_plus_hs$ATE_hs)
+summary(dissociative_hs$ATE_hs)
+boxplot(associative_minus_hs$ATE_hs, dissociative_hs$ATE_hs, associative_plus_hs$ATE_hs,
+        #ylim = c(-0.1, 0.13),
         names = c("Associative Minus", "Dissociative", "Associative Plus"))
 abline(h = 0, col = "red")
-
+title("High School")
 
 ######
 #community college application
@@ -93,6 +94,44 @@ community_college_application <- StrataBayes_Gibbs(X=X,
 
 save(community_college_application, file="community_college_application.Rdata")
 
+hist(rowMeans(community_college_application$P0_POST),breaks=1000)
+hist(rowMeans(community_college_application$P1_POST),breaks=1000)
+hist(rowMeans(community_college_application$P0_POST)[df$pm25_1982_binary==1],breaks=1000)
+hist(rowMeans(community_college_application$P1_POST)[df$pm25_1982_binary==0],breaks=1000)
+hist(rowMeans(community_college_application$Y0_POST),breaks=1000)
+hist(rowMeans(community_college_application$Y1_POST),breaks=1000)
+
+
+plot(rowMeans(community_college_application$P0_POST),rowMeans(community_college_application$P1_POST))
+#points(community_college_application$P0_POST[community_college_application$estimation_partition_V0==2],
+#       community_college_application$P1_POST[community_college_application$estimation_partition_V01==2], pch=19,
+#       col=2)
+plot(rowMeans(community_college_application$Y0_POST),rowMeans(community_college_application$Y1_POST))
+
+
+
+M_cc <- rowMeans(community_college_application$P1_POST)-
+  rowMeans(community_college_application$P0_POST)
+ATE_cc<- rowMeans(community_college_application$Y1_POST)-
+  rowMeans(community_college_application$Y0_POST)
+matrix_cc <- as.data.frame(cbind(M_cc, ATE_cc, X))
+
+dissociative_cc <- matrix_cc[which(M_cc<=0.01 & M_cc>=-0.01),]
+associative_plus_cc <- matrix_cc[which(M_cc > 0.01),]
+associative_minus_cc <- matrix_cc[which(M_cc <= -0.01),]
+
+
+
+summary(associative_minus_cc$ATE_cc)
+summary(associative_plus_cc$ATE_cc)
+summary(dissociative_cc$ATE_cc)
+boxplot(associative_minus_cc$ATE_cc, dissociative_cc$ATE_cc, associative_plus_cc$ATE_cc,
+        #ylim = c(-0.2, 0.4),
+        names = c("Associative Minus", "Dissociative", "Associative Plus"))
+abline(h = 0, col = "red")
+title("Community College")
+
+
 
 ##### college application
 college_application <- StrataBayes_Gibbs(X=X,
@@ -110,5 +149,42 @@ college_application <- StrataBayes_Gibbs(X=X,
 
 
 save(college_application, file="college_application.Rdata")
+
+
+hist(rowMeans(college_application$P0_POST),breaks=1000)
+hist(rowMeans(college_application$P1_POST),breaks=1000)
+hist(rowMeans(college_application$P0_POST)[df$pm25_1982_binary==1],breaks=1000)
+hist(rowMeans(college_application$P1_POST)[df$pm25_1982_binary==0],breaks=1000)
+hist(rowMeans(college_application$Y0_POST),breaks=1000)
+hist(rowMeans(college_application$Y1_POST),breaks=1000)
+
+
+plot(rowMeans(college_application$P0_POST),rowMeans(college_application$P1_POST))
+#points(college_application$P0_POST[college_application$estimation_partition_V0==2],
+#       college_application$P1_POST[college_application$estimation_partition_V01==2], pch=19,
+#       col=2)
+plot(rowMeans(college_application$Y0_POST),rowMeans(college_application$Y1_POST))
+
+
+
+M_c <- rowMeans(college_application$P1_POST)-
+  rowMeans(college_application$P0_POST)
+ATE_c <- rowMeans(college_application$Y1_POST)-
+  rowMeans(college_application$Y0_POST)
+matrix_c <- as.data.frame(cbind(M_c, ATE_c, X))
+
+dissociative_c <- matrix_c[which(M_c<=0.01 & M_c>=-0.01),]
+associative_plus_c <- matrix_c[which(M_c > 0.01),]
+associative_minus_c <- matrix_c[which(M_c <= -0.01),]
+
+summary(associative_minus_c$ATE_c)
+summary(associative_plus_c$ATE_c)
+summary(dissociative_c$ATE_c)
+boxplot(associative_minus_c$ATE_c, dissociative_c$ATE_c, associative_plus_c$ATE_c,
+        #ylim = c(-0.2, 0.15),
+        names = c("Associative Minus", "Dissociative", "Associative Plus"))
+abline(h = 0, col = "red")
+title("College")
+
 
 
