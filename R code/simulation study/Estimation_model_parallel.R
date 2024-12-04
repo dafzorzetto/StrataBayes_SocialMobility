@@ -351,30 +351,30 @@ ggplot(bias_ATE_P_all, aes(x=cov, y=bias, fill=Q)) +
   theme(panel.background = element_rect(fill='white'),
         plot.background = element_rect(fill ="white"),
         #panel.grid.minor = element_line(color = "grey"),
-        axis.title = element_text(size=14),
+        axis.title = element_text(size=10),
         legend.text=element_text(size=10),
         plot.title = element_text(hjust = 0.2),
         title =element_text(size=18),
         legend.background = element_rect(fill='transparent'),
         panel.grid.major = element_line(color = "grey",size = 0.1))+
-  ylab("Bias P(1)-P(0)") +
+  ylab(expression(paste('Bias PAT',E[P]))) +
   xlab("")
 
 ggplot(bias_ATE_Y_all, aes(x=cov, y=bias, fill=Q)) + 
   scale_fill_manual(values=colour_palette, name="")+
   geom_boxplot(lwd=0.3,fatten = 1.5, outlier.size = 0.3)+ 
-  coord_cartesian(ylim = c(-4, 4))+
+  coord_cartesian(ylim = c(-5, 5))+
   geom_hline(yintercept = 0, col="#007399", size=0.4) +
   theme(panel.background = element_rect(fill='white'),
         plot.background = element_rect(fill ="white"),
         #panel.grid.minor = element_line(color = "grey"),
-        axis.title = element_text(size=14),
+        axis.title = element_text(size=10),
         legend.text=element_text(size=10),
         plot.title = element_text(hjust = 0.2),
         title =element_text(size=18),
         legend.background = element_rect(fill='transparent'),
         panel.grid.major = element_line(color = "grey",size = 0.1))+
-  ylab("Bias Y(1)-Y(0)") +
+  ylab(expression(paste('Bias PAT',E[Y]))) +
   xlab("")
 
 table_results<-cbind(median_P=sapply(biases, function(x) median(x$bias_ATE_P)),
