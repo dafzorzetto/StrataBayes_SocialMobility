@@ -1,4 +1,4 @@
-df <- read.csv("C:\\Users\\paolo\\OneDrive\\Documents\\Harvard\\data\\AUM_edu_pm25_X_county.csv")
+df <- read.csv("AUM_edu_pm25_X_county.csv")
 df <- subset(df, select = -c(X,Unnamed..0))
 df <- na.omit(df)
 
