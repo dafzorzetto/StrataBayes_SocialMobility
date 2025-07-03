@@ -29,4 +29,11 @@
 
    results analysis of the proposed model against benchmark models
 
+### Envrironmental and socioeconomic application (in **`application`** folder):
+ - **`application.R`**:
 
+   application with social mobility, PM2.5 exposure, educational attainment and confounders data
+   
+ - **`plots_paper.R`**:
+
+   analysis and visualization of the results
