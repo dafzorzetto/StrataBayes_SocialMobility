@@ -4,9 +4,13 @@
  - **`Gibbs_Sampler.R`**:
 
    Gibbs sampler to estimate our proposed model: StrataBayes
+
+ - **`Competitor.R`**:
+
+   Gibbs sampler to estimate the benchmark model by Shwartz Li and Mealli(2011)
  
 ### Reproduce the results in the Simulation Study Section (in **`simulation study`** folder):
- - **`Simulations.R`**:
+ - **`Generating_Mechanism.R`**:
 
    generate different settings
  - **`Estimation_model.R`**:
@@ -20,5 +24,9 @@
   - **`Estimation_model_parallel_windows.R`**:
 
    estimate proposed model for the different simulated settings using library **`doparallel`**
+
+  - **`Analysis_Results.R`**:
+
+   results analysis of the proposed model against benchmark models
 
 
