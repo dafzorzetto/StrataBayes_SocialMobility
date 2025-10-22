@@ -182,3 +182,149 @@ spiderplots_schools(X, causal_effects=strata_hs, title_edu='High School', value_
 spiderplots_schools(X, causal_effects=strata_cc, title_edu='Comunity College', value_max=50)
 spiderplots_schools(X, causal_effects=strata_hs, title_edu='College', value_max=30)
 
+
+################################################################
+################################################################
+library(tidyverse)
+library(usmap)
+
+df_zip <- countypop
+df_our <- df
+df_our$county_state <- as.character(df_our$county_state)
+units_short <- which(str_length(df_our$county_state)==4)
+df_our$county_state[units_short] <- sapply(df_our$county_state[units_short], function(i) paste0("0", i))
+df_our$fips <- df_our$county_state
+
+df_our$strata_c <- strata_c
+df_our$strata_cc <- strata_cc
+df_our$strata_hs <- strata_hs
+
+# PM2.5
+pdf("maps_pm25.pdf", width = 10, height = 6)
+plot_usmap(
+  color = "white",
+  linewidth = 0.1,
+  regions = "counties",
+  data = df_our,
+  values = "pm25_1982",
+  exclude = c("AK", "HI")
+) +
+  scale_fill_gradientn(
+    name = "PM 2.5 (1982)",
+    colours = c("#89C900", "#F5D900", "#CF3B00"), 
+    na.value = "#D1D1D1",
+    label = scales::comma
+  ) 
+dev.off()
+
+# social mobility
+pdf("maps_mobility.pdf", width = 10, height = 6)
+plot_usmap(
+  color = "white",
+  linewidth = 0.1,
+  regions = "counties",
+  data = df_our,
+  values = "kfr_pooled_pooled_p25",
+  exclude = c("AK", "HI")
+) +
+  scale_fill_gradientn(
+    name = "AUM",
+    colours = c("#6670F5", "#CA52F5", "#F55873"), 
+    na.value = "#D1D1D1",
+    label = scales::comma
+  ) 
+dev.off()
+
+# school:high school
+pdf("maps_HS.pdf", width = 10, height = 6)
+plot_usmap(
+  color = "white",
+  linewidth = 0.1,
+  regions = "counties",
+  data = df_our,
+  values = "hs_pooled_pooled_p25",
+  exclude = c("AK", "HI")
+) +
+  scale_fill_gradientn(
+    name = "High School",
+    colours = c( "#92F4C3","#68AFF5", "#2B00C7"), 
+    na.value = "#D1D1D1",
+    label = scales::comma
+  ) 
+dev.off()
+
+# school:college
+pdf("maps_college.pdf", width = 10, height = 6)
+plot_usmap(
+  color = "white",
+  linewidth = 0.1,
+  regions = "counties",
+  data = df_our,
+  values = "coll_pooled_pooled_p25",
+  exclude = c("AK", "HI")
+) +
+  scale_fill_gradientn(
+    name = "College",
+    colours = c( "#92F4C3","#68AFF5", "#2B00C7"), 
+    na.value = "#D1D1D1",
+    label = scales::comma
+  ) 
+dev.off()
+
+# school:community college
+pdf("maps_CC.pdf", width = 10, height = 6)
+plot_usmap(
+  color = "white",
+  linewidth = 0.1,
+  regions = "counties",
+  data = df_our,
+  values = "comcoll_pooled_pooled_p25",
+  exclude = c("AK", "HI")
+) +
+  scale_fill_gradientn(
+    name = "Community Collge",
+    colours = c( "#92F4C3","#68AFF5", "#2B00C7"), 
+    na.value = "#D1D1D1",
+    label = scales::comma
+  ) 
+dev.off()
+
+
+
+# results:high school
+pdf("maps_HS_results.pdf", width = 10, height = 6)
+plot_usmap(
+  color = "white",
+  linewidth = 0.1,
+  regions = "counties",
+  data = df_our,
+  values = "strata_hs",
+  exclude = c("AK", "HI")
+) + scale_fill_manual(values=c("EAE-"="#D90224","EDE"="#EBB600","EAE+"="#00944B"), name="High School \nPrinc. Strata")
+dev.off()
+
+# results:cc
+pdf("maps_CC_results.pdf", width = 10, height = 6)
+plot_usmap(
+  color = "white",
+  linewidth = 0.1,
+  regions = "counties",
+  data = df_our,
+  values = "strata_cc",
+  exclude = c("AK", "HI")
+) + scale_fill_manual(values=c("EAE-"="#D90224","EDE"="#EBB600","EAE+"="#00944B"), 
+                      name="Comm. College \nPrinc. Strata")
+dev.off()
+
+# results:college
+pdf("maps_Coll_results.pdf", width = 10, height = 6)
+plot_usmap(
+  color = "white",
+  linewidth = 0.1,
+  regions = "counties",
+  data = df_our,
+  values = "strata_c",
+  exclude = c("AK", "HI")
+) + scale_fill_manual(values=c("EAE-"="#D90224","EDE"="#EBB600","EAE+"="#00944B"), 
+                      name="College \nPrinc. Strata")
+dev.off()

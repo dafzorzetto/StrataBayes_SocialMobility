@@ -80,23 +80,10 @@ model_setting_3_b <- mclapply(scenario_3, StrataBayes_Gibbs_parallel_X_Xw,
                               mc.cores = 6)
 
 
-
-prova<-list(scenario_1[[1]],scenario_1[[2]],scenario_1[[3]], scenario_1[[4]], 
-            scenario_1[[5]], scenario_1[[6]],scenario_1[[5]], scenario_1[[6]])
-start_time <- Sys.time()
-SLM_X_1 <- mclapply(prova, SLM_Xreg_Gibbs_parallel,
-                  R=500, burnin=1750,
-                  dim_cluster=10,
-                  mc.cores = 8)
-Sys.time() - start_time
-
-
-start_time <- Sys.time()
 SLM_1 <- mclapply(scenario_1, SLM_Gibbs_parallel,
                   R=750, burnin=2000,
                   dim_cluster=10,
                   mc.cores = 8)
-Sys.time() - start_time
 SLM_2 <- mclapply(scenario_2, SLM_Gibbs_parallel,
                   R=750, burnin=2000,
                   dim_cluster=10,
@@ -105,12 +92,10 @@ SLM_3 <- mclapply(scenario_3, SLM_Gibbs_parallel,R=2000, burnin=4000,
                   dim_cluster=10,
                   mc.cores = 6)
 
-start_time <- Sys.time()
 SLM_X_1 <- mclapply(scenario_1, SLM_Xreg_Gibbs_parallel,
                   R=500, burnin=1500,
                   dim_cluster=8,
                   mc.cores = 8)
-Sys.time() - start_time
 SLM_X_2 <- mclapply(scenario_2, SLM_Xreg_Gibbs_parallel,
                     R=500, burnin=1500,
                     dim_cluster=8,
@@ -119,6 +104,24 @@ SLM_X_3 <- mclapply(scenario_3, SLM_Xreg_Gibbs_parallel,
                   R=500, burnin=1500,
                   dim_cluster=8,
                   mc.cores = 8)
+
+# estimation LJD model 
+LJD_1=lapply(1:samples,function(i) point_estimator(Z=scenario_1[[i]]$data$Tr, 
+                                                   X=data.frame(scenario_1[[i]]$data$X[,-1]), 
+                                                   S=scenario_1[[i]]$data$P_obs, 
+                                                   Y=scenario_1[[i]]$data$Y_obs, 
+                                                   n_divisions=100, copula_type='gaussian', rho=0.25))
+LJD_2=lapply(1:samples,function(i) point_estimator(Z=scenario_2[[i]]$data$Tr, 
+                                                   X=data.frame(scenario_2[[i]]$data$X[,-1]), 
+                                                   S=scenario_2[[i]]$data$P_obs, 
+                                                   Y=scenario_2[[i]]$data$Y_obs, 
+                                                   n_divisions=100, copula_type='gaussian', rho=0.25))
+LJD_3=lapply(1:samples,function(i) point_estimator(Z=scenario_3[[i]]$data$Tr, 
+                                                   X=data.frame(scenario_3[[i]]$data$X[,-1]), 
+                                                   S=scenario_3[[i]]$data$P_obs, 
+                                                   Y=scenario_3[[i]]$data$Y_obs, 
+                                                   n_divisions=100, copula_type='gaussian', rho=0.25))
+
 
 #############################################################################
 
@@ -172,6 +175,7 @@ bias_funct_SLM<-function(data_sim, model_est){
               bias_Y0=bias_Y0, bias_Y1=bias_Y1))
 }
 
+
 bias_1 = bias_funct(data_sim = scenario_1, 
                     model_est=model_setting_1)
 bias_2_a = bias_funct(data_sim = scenario_2, 
@@ -194,6 +198,25 @@ bias_2_slm_x = bias_funct_SLM(data_sim = scenario_2,
                             model_est=SLM_X_2)
 bias_3_slm_x = bias_funct_SLM(data_sim = scenario_3, 
                               model_est=SLM_X_3)
+
+# LJD's model rho=0.25
+bias_Y_LJD1=sapply(1:samples, function(c) 
+  LJD_1[[c]]$Mu1-LJD_1[[c]]$Mu0-scenario_1[[c]]$simulated_full$Y_1+scenario_1[[c]]$simulated_full$Y_0)
+bias_Y_LJD2=sapply(1:samples, function(c) 
+  LJD_2[[c]]$Mu1-LJD_2[[c]]$Mu0-scenario_2[[c]]$simulated_full$Y_1+scenario_2[[c]]$simulated_full$Y_0)
+bias_Y_LJD3=sapply(1:samples, function(c) 
+  LJD_3[[c]]$Mu1-LJD_3[[c]]$Mu0-scenario_3[[c]]$simulated_full$Y_1+scenario_3[[c]]$simulated_full$Y_0)
+
+#mse_Y_LJD1=sapply(1:samples, function(c) 
+ # (LJD_1[[c]]$Mu1-LJD_1[[c]]$Mu0-scenario_1[[c]]$simulated_full$Y_1+scenario_1[[c]]$simulated_full$Y_0)^2)
+#mse_Y_LJD2=sapply(1:samples, function(c) 
+ # (LJD_2[[c]]$Mu1-LJD_2[[c]]$Mu0-scenario_2[[c]]$simulated_full$Y_1+scenario_2[[c]]$simulated_full$Y_0)^2)
+#mse_Y_LJD3=sapply(1:samples, function(c) 
+ # (LJD_3[[c]]$Mu1-LJD_3[[c]]$Mu0-scenario_3[[c]]$simulated_full$Y_1+scenario_3[[c]]$simulated_full$Y_0)^2)
+
+c(median(apply(bias_Y_LJD1,2,mean)),IQR(apply(bias_Y_LJD1,2,mean)))
+c(median(apply(bias_Y_LJD2,2,mean)),IQR(apply(bias_Y_LJD2,2,mean)))
+c(median(apply(bias_Y_LJD3,2,mean)),IQR(apply(bias_Y_LJD3,2,mean)))
 
 sapply(bias_1,function(i) summary(i))
 sapply(bias_2_a,function(i) summary(i))
