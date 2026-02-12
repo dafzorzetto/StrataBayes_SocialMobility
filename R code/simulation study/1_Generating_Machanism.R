@@ -1,4 +1,4 @@
-#n <- 500 # units for each sample
+n <- 500 # units for each sample
 samples <- 200 # repetition of each setting (number of samples)
 
 
