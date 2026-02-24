@@ -14,12 +14,11 @@ SLM_Xreg_GIbbs<-function(X, Tr, P, Y, R=5000, burnin=1000, n_cluster=10){
   # ------   preparing variables   ------
   
   # main variables
-  T=Tr
-  n=length(T)
+  n=length(Tr)
   
   dD=matrix(rep(0,n*2),ncol=2)
-  dD[T==1,2]<-P[T==1]   
-  dD[T==0,1]<-P[T==0] 
+  dD[Tr==1,2]<-P[Tr==1]   
+  dD[Tr==0,1]<-P[Tr==0] 
   
   ### with X
   XyC=cbind(X,dD[,1])
@@ -82,9 +81,9 @@ SLM_Xreg_GIbbs<-function(X, Tr, P, Y, R=5000, burnin=1000, n_cluster=10){
   
   Z=sample(1:J, n, replace=TRUE)
   n_j=1:J
-  n_T=sum(T)
-  dD[T==0,2]=runif(n-n_T,0,1)
-  dD[T==1,1]=runif(n_T,0,1)
+  n_T=sum(Tr)
+  dD[Tr==0,2]=runif(n-n_T,0,1)
+  dD[Tr==1,1]=runif(n_T,0,1)
   
   component_assign_probs=matrix(rep(Y,J), ncol=J)
   Deviance_Thing=1:R
@@ -116,25 +115,25 @@ SLM_Xreg_GIbbs<-function(X, Tr, P, Y, R=5000, burnin=1000, n_cluster=10){
   
   # ---- gibbs sampler: ----
   for (g in 2:R){
-    d_cond_D_mean = mu_j[Z[T==1],2*(g-2)+1]+(SIGMA[Z[T==1]*2-1,2]/SIGMA[Z[T==1]*2,2])*
-      (dD[T==1,2] - mu_j[Z[T==1],2*(g-2)+2])
-    d_cond_D_var = SIGMA[Z[T==1]*2-1,1]-(SIGMA[Z[T==1]*2-1,2]^2/SIGMA[Z[T==1]*2,2])
+    d_cond_D_mean = mu_j[Z[Tr==1],2*(g-2)+1]+(SIGMA[Z[Tr==1]*2-1,2]/SIGMA[Z[Tr==1]*2,2])*
+      (dD[Tr==1,2] - mu_j[Z[Tr==1],2*(g-2)+2])
+    d_cond_D_var = SIGMA[Z[Tr==1]*2-1,1]-(SIGMA[Z[Tr==1]*2-1,2]^2/SIGMA[Z[Tr==1]*2,2])
     
-    d_in_y_mean = (Y[T==1]-XyT[T==1, c(1,3)]%*%beta_yT[c(1,3),g-1])/ (matrix(c(rep(1,n_T),XyT[T==1,3]), ncol=2)%*%beta_yT[c(2,4),g-1])
-    d_in_y_var = exp(gamma_0[g-1]+XyT[T==1, 3]*gamma_1[g-1])/ (matrix(c(rep(1,n_T),XyT[T==1,3]), ncol=2)%*%beta_yT[c(2,4),g-1])^2 
+    d_in_y_mean = (Y[Tr==1]-XyT[Tr==1, c(1,3)]%*%beta_yT[c(1,3),g-1])/ (matrix(c(rep(1,n_T),XyT[Tr==1,3]), ncol=2)%*%beta_yT[c(2,4),g-1])
+    d_in_y_var = exp(gamma_0[g-1]+XyT[Tr==1, 3]*gamma_1[g-1])/ (matrix(c(rep(1,n_T),XyT[Tr==1,3]), ncol=2)%*%beta_yT[c(2,4),g-1])^2 
     
     d_var = 1/(1/d_in_y_var + rep(1,n_T)/d_cond_D_var)
     d_mean = (d_in_y_mean/d_in_y_var + d_cond_D_mean/d_cond_D_var)*d_var
     
-    D_cond_d_mean = mu_j[Z[T==0],2*(g-2)+2]+(SIGMA[Z[T==0]*2-1,2]/SIGMA[Z[T==0]*2-1,1])*
-      (dD[T==0,1] - mu_j[Z[T==0],2*(g-2)+1])
-    D_cond_d_var = SIGMA[Z[T==0]*2,2]-(SIGMA[Z[T==0]*2-1,2]^2/SIGMA[Z[T==0]*2-1,1])
+    D_cond_d_mean = mu_j[Z[Tr==0],2*(g-2)+2]+(SIGMA[Z[Tr==0]*2-1,2]/SIGMA[Z[Tr==0]*2-1,1])*
+      (dD[Tr==0,1] - mu_j[Z[Tr==0],2*(g-2)+1])
+    D_cond_d_var = SIGMA[Z[Tr==0]*2,2]-(SIGMA[Z[Tr==0]*2-1,2]^2/SIGMA[Z[Tr==0]*2-1,1])
     
     D_var = D_cond_d_var
     D_mean = D_cond_d_mean
     
-    dD[T==1,1]=d_mean+sqrt(d_var)*qnorm(sapply(1:n_T, function(i) runif(1,pnorm(0,d_mean[i],sqrt(d_var[i])),pnorm(1,d_mean[i],sqrt(d_var[i])))))
-    dD[T==0,2]=D_mean+sqrt(D_var)*qnorm(sapply(1:(n-n_T), function(i) runif(1,pnorm(0,D_mean[i],sqrt(D_var[i])),pnorm(1,D_mean[i],sqrt(D_var[i])))))
+    dD[Tr==1,1]=d_mean+sqrt(d_var)*qnorm(sapply(1:n_T, function(i) runif(1,pnorm(0,d_mean[i],sqrt(d_var[i])),pnorm(1,d_mean[i],sqrt(d_var[i])))))
+    dD[Tr==0,2]=D_mean+sqrt(D_var)*qnorm(sapply(1:(n-n_T), function(i) runif(1,pnorm(0,D_mean[i],sqrt(D_var[i])),pnorm(1,D_mean[i],sqrt(D_var[i])))))
     
     # cluster allocation probability
     tmp=matrix(runif(n*2,0,1),nrow=n)
@@ -218,17 +217,17 @@ SLM_Xreg_GIbbs<-function(X, Tr, P, Y, R=5000, burnin=1000, n_cluster=10){
     #beta_yT[2,g]=beta_y_d[,g]
     
     
-    phi_b2=diag(1/exp(gamma_0[g-1]+dD[T==1,2]*gamma_1[g-1])) 
-    X_tilde_b2=cbind(X[T==1,],dD[T==1,1],dD[T==1,2],dD[T==1,2]*dD[T==1,1])
-    Y_tilde_b2=Y[T==1]                                                        
+    phi_b2=diag(1/exp(gamma_0[g-1]+dD[Tr==1,2]*gamma_1[g-1])) 
+    X_tilde_b2=cbind(X[Tr==1,],dD[Tr==1,1],dD[Tr==1,2],dD[Tr==1,2]*dD[Tr==1,1])
+    Y_tilde_b2=Y[Tr==1]                                                        
     V_b2=solve(t(X_tilde_b2)%*%phi_b2%*%X_tilde_b2+diag(dim(X_tilde_b2)[2])/s2_T)
     V_b2=(V_b2+t(V_b2))/2
     M_b2=V_b2%*%(t(X_tilde_b2)%*%phi_b2%*%Y_tilde_b2+beta_yT_0/s2_T)
     beta_yT[,g]=rmvnorm(1,M_b2,V_b2)
     
     phi_b1=diag(rep(1/exp(gamma_0[g-1]),n-n_T))    
-    X_tilde_b1=cbind(X[T==0,],dD[T==0,1])
-    Y_tilde_b1=Y[T==0]                                                   
+    X_tilde_b1=cbind(X[Tr==0,],dD[Tr==0,1])
+    Y_tilde_b1=Y[Tr==0]                                                   
     V_b1=solve(t(X_tilde_b1)%*%phi_b1%*%X_tilde_b1+diag(dim(X_tilde_b1)[2])/s2_C)
     V_b1=(V_b1+t(V_b1))/2
     M_b1=V_b1%*%(t(X_tilde_b1)%*%phi_b1%*%Y_tilde_b1+beta_yC_0/s2_C)
@@ -237,18 +236,18 @@ SLM_Xreg_GIbbs<-function(X, Tr, P, Y, R=5000, burnin=1000, n_cluster=10){
     
     # updateing gamma_0 and gamma_1 (variance of Y-model)
     gamma_0star=rnorm(1,gamma_0_mu, sqrt(gamma_0_s2)) 
-    new=log(c(pnorm(Y[T==0],XyC[T==0,]%*%beta_yC[,g],sqrt(exp(gamma_0star))),
-              pnorm(Y[T==1],XyT[T==1,]%*%beta_yT[,g],sqrt(exp(gamma_0star+dD[T==1,2]*gamma_1[g-1])))))
-    old=log(c(pnorm(Y[T==0],XyC[T==0,]%*%beta_yC[,g],sqrt(exp(gamma_0[g-1]))),
-              pnorm(Y[T==1],XyT[T==1,]%*%beta_yT[,g],sqrt(exp(gamma_0[g-1]+dD[T==1,2]*gamma_1[g-1])))))
+    new=log(c(pnorm(Y[Tr==0],XyC[Tr==0,]%*%beta_yC[,g],sqrt(exp(gamma_0star))),
+              pnorm(Y[Tr==1],XyT[Tr==1,]%*%beta_yT[,g],sqrt(exp(gamma_0star+dD[Tr==1,2]*gamma_1[g-1])))))
+    old=log(c(pnorm(Y[Tr==0],XyC[Tr==0,]%*%beta_yC[,g],sqrt(exp(gamma_0[g-1]))),
+              pnorm(Y[Tr==1],XyT[Tr==1,]%*%beta_yT[,g],sqrt(exp(gamma_0[g-1]+dD[Tr==1,2]*gamma_1[g-1])))))
     old[old==(-Inf)]<- (-100)
     new[new==(-Inf)]<- (-100)
     gamma_0[g]=ifelse(runif(1)<exp(sum(new-old)),gamma_0star,gamma_0[g-1])
     #print(paste0("gamma 0 :",gamma_0[g-1]," / ",gamma_0star," / ",gamma_0[g]))
     
     gamma_1star = rnorm(1,gamma_1_mu, sqrt(gamma_1_s2))
-    new = log(pnorm(Y[T==1],XyT[T==1,]%*%beta_yT[,g],sqrt(exp(gamma_0[g]+dD[T==1,2]*gamma_1star)))) 
-    old = log(pnorm(Y[T==1],XyT[T==1,]%*%beta_yT[,g],sqrt(exp(gamma_0[g]+dD[T==1,2]*gamma_1[g-1]))))
+    new = log(pnorm(Y[Tr==1],XyT[Tr==1,]%*%beta_yT[,g],sqrt(exp(gamma_0[g]+dD[Tr==1,2]*gamma_1star)))) 
+    old = log(pnorm(Y[Tr==1],XyT[Tr==1,]%*%beta_yT[,g],sqrt(exp(gamma_0[g]+dD[Tr==1,2]*gamma_1[g-1]))))
     old[old==(-Inf)]<- (-100)
     new[new==(-Inf)]<- (-100)
     gamma_1[g]=ifelse(runif(1)<exp(sum(new-old)),gamma_1star,gamma_1[g-1])
@@ -264,11 +263,11 @@ SLM_Xreg_GIbbs<-function(X, Tr, P, Y, R=5000, burnin=1000, n_cluster=10){
     #                               pi_star),3)))
     
     dD_overall_average=dD_overall_average+dD/(R-1)
-    Deviance_Thing[g]= -2*(sum(log(dnorm(Y[T==1], XyT[T==1,]%*%beta_yT[,g],sqrt(exp(gamma_0[g]+dD[T==1,2]*gamma_1[g])))))+
-                             sum(log(dnorm(Y[T==0], XyC[T==0,]%*%beta_yC[,g], sqrt(exp(gamma_0[g]))))))
+    Deviance_Thing[g]= -2*(sum(log(dnorm(Y[Tr==1], XyT[Tr==1,]%*%beta_yT[,g],sqrt(exp(gamma_0[g]+dD[Tr==1,2]*gamma_1[g])))))+
+                             sum(log(dnorm(Y[Tr==0], XyC[Tr==0,]%*%beta_yC[,g], sqrt(exp(gamma_0[g]))))))
     
-    Y_1=rnorm(n, XyT%*%beta_yT[,g],sqrt(exp(gamma_0[g]+dD[T==1,2]*gamma_1[g])))
-    Y_0=rnorm(n, XyC[T==0,]%*%beta_yC[,g], sqrt(exp(gamma_0[g])))
+    Y_1=rnorm(n, XyT%*%beta_yT[,g],sqrt(exp(gamma_0[g]+dD[Tr==1,2]*gamma_1[g])))
+    Y_0=rnorm(n, XyC[Tr==0,]%*%beta_yC[,g], sqrt(exp(gamma_0[g])))
     
     # save information
     z_late_var[,g]=Z
