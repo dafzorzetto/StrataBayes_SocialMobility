@@ -81,7 +81,7 @@ transformed parameters {
       weights_p[n, k_p] = V_p[k_p] * remaining_p;
       remaining_p *= (1 - V_p[k_p]);
     }
-    weights_p[n, L_y] = remaining_p;
+    weights_p[n, L_p] = remaining_p;
     
     // Stick-breaking construction for Y
     weights_y[n, 1] = V_y[1];
