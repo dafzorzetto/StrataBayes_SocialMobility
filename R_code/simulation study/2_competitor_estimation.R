@@ -45,8 +45,15 @@ SLM_X_2 <- mclapply(scenario_2, SLM_Xreg_Gibbs_parallel,
 save(SLM_X_2, file = "SLM_X_2.RData")
 
 
-# estimation BPCF by 
-start <- proc.time()
-gg=1
+# estimation BPCF by Kim and Zigler
 BPCF_scenario1 <- lapply(scenario_1, function(x) BPCF_sample(x))
-proc.time() - start
+save(BPCF_scenario1, file = "BPCF_1.RData")
+
+BPCF_scenario2 <- lapply(scenario_2, function(x) BPCF_sample(x))
+save(BPCF_scenario2, file = "BPCF_2.RData")
+
+BPCF_scenario3 <- lapply(scenario_3, function(x) BPCF_sample(x))
+save(BPCF_scenario3, file = "BPCF_3.RData")
+
+BPCF_scenario4 <- lapply(scenario_4, function(x) BPCF_sample(x))
+save(BPCF_scenario4, file = "BPCF_4.RData")
