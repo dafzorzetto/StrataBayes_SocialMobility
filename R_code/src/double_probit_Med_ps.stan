@@ -12,6 +12,13 @@ data {
   vector[N] Y;                 // univariate final outcome
 }
 
+transformed data {
+  real mean_P = mean(P);
+  real sd_P = sd(P);
+  real mean_Y = mean(Y);
+  real sd_Y = sd(Y);
+}
+
 
 parameters {
   // Centered parameterization
@@ -23,14 +30,14 @@ parameters {
   vector[L_y-1] beta_p_y;
   
   // Component parameters (Gaussian mixture) for P
-  vector[L_p] alpha0;                   // intercept - component means
+  ordered[L_p] alpha0;                   // intercept - component means
   matrix[L_p, Q] alpha1;                // covariates - component means
   vector[L_p] alpha2;                   // treatment - component means
   vector[L_p] alpha_ps;                 // prop score - component means
   vector<lower=0>[L_p] sigma_p;         // component standard deviations
   
   // Component parameters (Gaussian mixture) for Y
-  vector[L_y] gamma0;                   // intercept - component means
+  ordered[L_y] gamma0;                   // intercept - component means
   matrix[L_y, Q] gamma1;                // covariates - component means
   vector[L_y] gamma2;                   // treatment - component means
   vector[L_y] gamma3;                   // p_obs - component means
@@ -106,7 +113,7 @@ model {
   beta_p_y ~ normal(-0.5,2);
   
   // Component parameters - P
-  mu0_a ~ normal(mean(P), 2 * sd(P));
+  mu0_a ~ normal(mean_P, 2 * sd_P);
   to_vector(mu1_a) ~ normal(0,5);
   mu2_a ~  normal(0,5);
   mu_ps_a ~  normal(0,5);
@@ -125,7 +132,7 @@ model {
   }
   
   // Component parameters - Y
-  mu0_g ~ normal(mean(Y), 2 * sd(Y));
+  mu0_g ~ normal(mean_Y, 2 * sd_Y);
   to_vector(mu1_g) ~ normal(0,5);
   mu2_g ~  normal(0,5);
   mu3_g ~  normal(0,5);
