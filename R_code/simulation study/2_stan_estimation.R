@@ -164,7 +164,7 @@ hist_comparison_1sample(data=scenario_4[[1]]$simulated_full, est=est_doubleBNP_s
 ###########################################################################
 
 
-est_resullts <- function(data, est){
+est_resullts_doubleBNP <- function(data, est){
   
   P0_est = apply(est$post_P0, 2, mean)
   P1_est = apply(est$post_P1, 2, mean)
@@ -187,13 +187,13 @@ est_resullts <- function(data, est){
 }
 
 
-results_doubleBNP_s1 <- lapply(1:samples, function(x) est_resullts(data = scenario_1[[x]],
+results_doubleBNP_s1 <- lapply(1:samples, function(x) est_resullts_doubleBNP(data = scenario_1[[x]],
                                                                    est=est_doubleBNP_s1[[x]]) )
-results_doubleBNP_s2 <- lapply(1:samples, function(x) est_resullts(data = scenario_2[[x]],
+results_doubleBNP_s2 <- lapply(1:samples, function(x) est_resullts_doubleBNP(data = scenario_2[[x]],
                                                                    est=est_doubleBNP_s2[[x]]) )
-results_doubleBNP_s3 <- lapply(1:samples, function(x) est_resullts(data = scenario_3[[x]],
+results_doubleBNP_s3 <- lapply(1:samples, function(x) est_resullts_doubleBNP(data = scenario_3[[x]],
                                                                    est=est_doubleBNP_s3[[x]]) )
-results_doubleBNP_s4 <- lapply(1:samples, function(x) est_resullts(data = scenario_4[[x]],
+results_doubleBNP_s4 <- lapply(1:samples, function(x) est_resullts_doubleBNP(data = scenario_4[[x]],
                                                                    est=est_doubleBNP_s4[[x]]) )
 
 
