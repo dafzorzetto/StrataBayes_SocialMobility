@@ -149,8 +149,8 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
   ####################################################################
   #   ---    quantities to save    ---
   r_kept = R_tot - R_burnin
-  P0_post_allImp <- P1_post_allImp <- array(NA, if(method =='population') c(sample_population, r_kept) else c(n_units,r_kept))
-  Y0_post_allImp <- Y1_post_allImp <- array(NA, if(method =='population') c(sample_population, r_kept) else c(n_units,r_kept))
+  P0_post_allImp <- P1_post_allImp <- matrix(NA, nrow= n_units, ncol= R_tot-R_burnin)
+  Y0_post_allImp <- Y1_post_allImp <- matrix(NA, nrow= n_units, ncol= R_tot-R_burnin)
   PCE_post <- matrix(NA, nrow= 3, ncol= R_tot-R_burnin)
   row.names(PCE_post) <- c("associative negative", "dissociative", "associative positive")
   
@@ -306,11 +306,13 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
       
       # 10.2.b POPULATION Principal causal effect 
       if (method == "population") {
-        Dirichlet_Cov <- rdirichlet(sample_population, rep(1, n_units))
-        
+        bootstrap_units <- sample(1:n_units, sample_population, replace=TRUE)
+        diff_P_boots = diff_P[bootstrap_units]
+        diff_Y_boots = diff_Y[bootstrap_units]
+        PCE_post[1,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots<(-epsilon)) ])
+        PCE_post[3,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots>epsilon) ])
+        PCE_post[2,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots>(-epsilon) & diff_P_boots<epsilon) ])
       }
-    
-      
 
     }
     
