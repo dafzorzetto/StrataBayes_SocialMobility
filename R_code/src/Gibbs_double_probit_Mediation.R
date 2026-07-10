@@ -35,9 +35,6 @@ Double_probit_Mediation <- function(Outcome, Interm, Treat, Covariates, PScore =
   } else {
     Covariates = cbind(PScore, Covariates)  # propensity score added as covariates
   }
-  if(is.na(epsilon)){
-    return(print("you have to include epsilon (parameter to define principal causal effect)")) 
-  }
   
   interm_Cov = cbind(1, Covariates, Treat)
   outcome_Cov = cbind(interm_Cov, Interm) 
@@ -47,14 +44,14 @@ Double_probit_Mediation <- function(Outcome, Interm, Treat, Covariates, PScore =
   
   which_Tr_0 = which(Treat==0)
   which_Tr_1 = which(Treat==1)
-  interm_Cov_Tr1 = interm_Cov[which_Tr_1,]
-  interm_Cov_Tr1[,dim_I_cov] <- 0
   n_units_Tr1 = length(which_Tr_1)
   
-  interm_Cov_Imp_Tr0 <- interm_Cov_Imp_Tr1 <- interm_Cov
-  outcome_Cov_Imp_Tr0 <- outcome_Cov_Imp_Tr1 <- outcome_Cov
-  interm_Cov_Imp_Tr0[, dim_I_cov] = outcome_Cov_Imp_Tr0[, dim_O_cov-2] = 0
-  interm_Cov_Imp_Tr1[, dim_I_cov] = outcome_Cov_Imp_Tr1[, dim_O_cov-2] = 1
+  Cov_Imp_interm_Tr0 <- Cov_Imp_interm_Tr1 <- interm_Cov
+  Cov_Imp_outcome_Tr0_Interm0 <- Cov_Imp_outcome_Tr0_Interm1 <- outcome_Cov
+  Cov_Imp_outcome_Tr1_Interm0 <- Cov_Imp_outcome_Tr1_Interm1 <- outcome_Cov
+  
+  Cov_Imp_interm_Tr0[, dim_I_cov] = Cov_Imp_outcome_Tr0_Interm0[, dim_O_cov-1] = Cov_Imp_outcome_Tr0_Interm1[, dim_O_cov-1] = 0
+  Cov_Imp_interm_Tr1[, dim_I_cov] = Cov_Imp_outcome_Tr1_Interm0[, dim_O_cov-1] = Cov_Imp_outcome_Tr1_Interm1[, dim_O_cov-1] = 1
   
   ####################################################################
   #   ---    functions    ---
@@ -151,12 +148,12 @@ Double_probit_Mediation <- function(Outcome, Interm, Treat, Covariates, PScore =
   #   ---    quantities to save    ---
   r_kept = R_tot - R_burnin
   P0_post_allImp <- P1_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
-  Y0_post_allImp <- Y1_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
+  Y0_P0_post_allImp <- Y1_P0_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
+  Y0_P1_post_allImp <- Y1_P1_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
   Decomp_Effects_post <- matrix(NA, nrow= 4, ncol= r_kept)
   row.names(Decomp_Effects_post) <- c("total NDE", "pure NDE", "total NIE", "pure NIE")
   Total_Effects_post <- matrix(NA, nrow= 2, ncol= r_kept)
   row.names(Total_Effects_post) <- c("total_NDE + pure_NIE", "pure_NDE + total_NIE")
-  ATE_post <- matrix(NA, nrow= 1, ncol= r_kept)
   
   ####################################################################
   #   ---    GIBBS START HERE !!    ---
@@ -269,61 +266,66 @@ Double_probit_Mediation <- function(Outcome, Interm, Treat, Covariates, PScore =
       log_weights = log(omega_Interm)
       adj_weights = exp(log_weights - apply(log_weights, 1, max))
       adj_weights = adj_weights/rowSums(adj_weights)
-      reg_tr0 = interm_Cov_Imp_Tr0%*%alpha
-      reg_tr1 = interm_Cov_Imp_Tr1%*%alpha
+      reg_tr0 = Cov_Imp_interm_Tr0%*%alpha
+      reg_tr1 = Cov_Imp_interm_Tr1%*%alpha
       
       P0_imp = rowSums(reg_tr0*adj_weights)
       P1_imp = rowSums(reg_tr1*adj_weights)
       
       # outcome
-      outcome_Cov_Imp_Tr0[which_Tr_1,(dim_O_cov-1)] <- outcome_Cov_Imp_Tr1[which_Tr_1,(dim_O_cov-1)] <- Int_imp
+      Cov_Imp_outcome_Tr0_Interm0[, dim_O_cov] = Cov_Imp_outcome_Tr1_Interm0[, dim_O_cov] = P0_imp
+      Cov_Imp_outcome_Tr0_Interm1[, dim_O_cov] = Cov_Imp_outcome_Tr1_Interm1[, dim_O_cov] = P1_imp
       
       log_weights = log(omega_Outcome)
       adj_weights = exp(log_weights - apply(log_weights, 1, max))
       adj_weights = adj_weights/rowSums(adj_weights)
-      reg_tr0 = outcome_Cov_Imp_Tr0%*%beta
-      reg_tr1 = outcome_Cov_Imp_Tr1%*%beta
+      reg_tr0_i0 = Cov_Imp_outcome_Tr0_Interm0%*%beta
+      reg_tr0_i1 = Cov_Imp_outcome_Tr0_Interm1%*%beta
+      reg_tr1_i0 = Cov_Imp_outcome_Tr1_Interm0%*%beta
+      reg_tr1_i1 = Cov_Imp_outcome_Tr1_Interm1%*%beta
       
-      Y0_imp = rowSums(reg_tr0*adj_weights)
-      Y1_imp = rowSums(reg_tr1*adj_weights)
+      Y0_P0_imp = rowSums(reg_tr0_i0*adj_weights)
+      Y0_P1_imp = rowSums(reg_tr0_i1*adj_weights)
+      Y1_P0_imp = rowSums(reg_tr1_i0*adj_weights)
+      Y1_P1_imp = rowSums(reg_tr1_i1*adj_weights)
       
       ### Z- save data
       P0_post_allImp[,r-R_burnin] = P0_imp
       P1_post_allImp[,r-R_burnin] = P1_imp
-      Y0_post_allImp[,r-R_burnin] = Y0_imp
-      Y1_post_allImp[,r-R_burnin] = Y1_imp
+      Y0_P0_post_allImp[,r-R_burnin] = Y0_P0_imp
+      Y0_P1_post_allImp[,r-R_burnin] = Y0_P1_imp
+      Y1_P0_post_allImp[,r-R_burnin] = Y1_P0_imp
+      Y1_P1_post_allImp[,r-R_burnin] = Y1_P1_imp
       
-      diff_P = P1_imp - P0_imp
-      diff_Y = Y1_imp - Y0_imp
+      totNDE = Y1_P1_imp - Y0_P1_imp
+      pureNDE = Y1_P0_imp - Y0_P0_imp
+      totNIE = Y1_P1_imp - Y1_P0_imp
+      pureNIE = Y0_P1_imp - Y0_P0_imp
       
       # 10.2.a SAMPLE Principal causal effect 
       if (method == "sample"){
-        PCE_post[1,r-R_burnin] = mean(diff_Y[which(diff_P<(-epsilon)) ])
-        PCE_post[3,r-R_burnin] = mean(diff_Y[which(diff_P>epsilon) ])
-        PCE_post[2,r-R_burnin] = mean(diff_Y[which(diff_P>(-epsilon) & diff_P<epsilon) ])
         
+        Decomp_Effects_post[1,r-R_burnin] = mean(totNDE)
+        Decomp_Effects_post[2,r-R_burnin] = mean(pureNDE)
+        Decomp_Effects_post[3,r-R_burnin] = mean(totNIE)
+        Decomp_Effects_post[4,r-R_burnin] = mean(pureNIE)
+          
+        Total_Effects_post[1,r-R_burnin] = mean(totNDE + pureNIE)
+        Total_Effects_post[2,r-R_burnin] = mean(pureNDE + totNIE)
         
-        Decomp_Effects_post[1,r-R_burnin] =
-        
-        Total_Effects_post <- matrix(NA, nrow= 2, ncol= r_kept)
-        
-        
-        #row.names(Decomp_Effects_post) <- c("total NDE", "pure NDE", "total NIE", "pure NIE")
-        #row.names(Total_Effects_post) <- c("total_NDE + pure_NIE", "pure_NDE + total_NIE")
-        
-        
-        ATE_post[1,r-R_burnin] = mean(diff_Y)
       }
       
       # 10.2.b POPULATION Principal causal effect 
       if (method == "population") {
         bootstrap_units <- sample(1:n_units, sample_population, replace=TRUE)
-        diff_P_boots = diff_P[bootstrap_units]
-        diff_Y_boots = diff_Y[bootstrap_units]
-        PCE_post[1,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots<(-epsilon)) ])
-        PCE_post[3,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots>epsilon) ])
-        PCE_post[2,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots>(-epsilon) & diff_P_boots<epsilon) ])
-        ATE_post[1,r-R_burnin] = mean(diff_Y_boots)
+        
+        Decomp_Effects_post[1,r-R_burnin] = mean(totNDE[bootstrap_units])
+        Decomp_Effects_post[2,r-R_burnin] = mean(pureNDE[bootstrap_units])
+        Decomp_Effects_post[3,r-R_burnin] = mean(totNIE[bootstrap_units])
+        Decomp_Effects_post[4,r-R_burnin] = mean(pureNIE[bootstrap_units])
+        
+        Total_Effects_post[1,r-R_burnin] = mean(totNDE[bootstrap_units] + pureNIE[bootstrap_units])
+        Total_Effects_post[2,r-R_burnin] = mean(pureNDE[bootstrap_units] + totNIE[bootstrap_units])
       }
       
     }
@@ -338,8 +340,9 @@ Double_probit_Mediation <- function(Outcome, Interm, Treat, Covariates, PScore =
   ####################################################################
   #   ---    the end    ---
   return(list(Interm_Tr0 = rowMeans(P0_post_allImp), Interm_Tr1 = rowMeans(P1_post_allImp),
-              Outcome_Tr0 = rowMeans(Y0_post_allImp), Outcome_Tr1 = rowMeans(Y1_post_allImp),
-              Prin_Causal_Effects = PCE_post, Average_Treat_Effect = ATE_post))
+              Outcome_Tr0_Interm_Tr0 = rowMeans(Y0_P0_post_allImp), Outcome_Tr0_Interm_Tr1 = rowMeans(Y0_P1_post_allImp),
+              Outcome_Tr1_Interm_Tr0 = rowMeans(Y1_P0_post_allImp), Outcome_Tr1_Interm_Tr1 = rowMeans(Y1_P1_post_allImp),
+              Direct_Indirect_Effects = Decomp_Effects_post, Total_Effect = Total_Effects_post))
 }
 
     
