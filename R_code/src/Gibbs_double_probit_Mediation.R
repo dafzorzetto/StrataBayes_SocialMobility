@@ -3,10 +3,10 @@ library(matrixStats)
 library(truncnorm)
 library(gtools)         # Dirichlet 
 
-Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
+Double_probit_Mediation <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
                              R_tot, R_burnin, L_max, seed=111, 
-                             method = "population", epsilon){
-  
+                             method = "population"){
+
   set.seed(seed)
   sample_population = 1500
   
@@ -38,8 +38,7 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
   # regression matrices
   weight_Cov = cbind(1, Covariates)
   interm_Cov = cbind(weight_Cov, Treat)
-  outcome_Cov = cbind(interm_Cov, Interm, Interm*Treat)   
-  ### attention: this matrix will change across iterations. Initialitation P(0)|Tr=1 equal to P(1) 
+  outcome_Cov = cbind(interm_Cov, Interm) 
   dim_W_cov = ncol(weight_Cov)
   dim_I_cov = ncol(interm_Cov)
   dim_O_cov = ncol(outcome_Cov)
@@ -151,8 +150,10 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
   r_kept = R_tot - R_burnin
   P0_post_allImp <- P1_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
   Y0_post_allImp <- Y1_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
-  PCE_post <- matrix(NA, nrow= 3, ncol= r_kept)
-  row.names(PCE_post) <- c("associative negative", "dissociative", "associative positive")
+  Decomp_Effects_post <- matrix(NA, nrow= 4, ncol= r_kept)
+  row.names(Decomp_Effects_post) <- c("total NDE", "pure NDE", "total NIE", "pure NIE")
+  Total_Effects_post <- matrix(NA, nrow= 2, ncol= r_kept)
+  row.names(Total_Effects_post) <- c("total_NDE + pure_NIE", "pure_NDE + total_NIE")
   ATE_post <- matrix(NA, nrow= 1, ncol= r_kept)
   
   ####################################################################
@@ -198,7 +199,7 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
     
     ### 3- augmentation scheme for INTERMEDIATE
     Z_interm = Z_sampling(weights = omega_Interm, allocation = Interm_alloc)
-
+    
     ### 4- update weight-INTERMEDIATE parameters
     # 4.1 update parameters
     Cov_tilde = lapply(1:L_max, function(l) matrix(weight_Cov[which(Interm_alloc>=l),], ncol= dim_W_cov))
@@ -207,12 +208,7 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
     
     eta_Interm = sapply(1:L_max, function(l) mvtnorm::rmvnorm(1, Var_eta[[l]]%*%mean_eta[,l], Var_eta[[l]]))
     
-    ### 5- imputation P(0) | t= 1
-    regresion_imputation = rowSums(interm_Cov_Tr1*t(alpha)[Interm_alloc[which_Tr_1],])
-    Int_imp = rnorm(n_units_Tr1, regresion_imputation, Sigma_Interm[Interm_alloc[which_Tr_1]])
-    #update outcome regression matrix
-    outcome_Cov[which_Tr_1,(dim_O_cov-1)] <- Int_imp
-    Cov_outcome_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov[Outcome_alloc==l,], ncol = dim_O_cov))
+    ### 5- imputation Intermediate NOT needed
     
     ### 6- update OUTCOME parameters
     # 6.1: regression paramaters
@@ -265,7 +261,7 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
     
     if (r > R_burnin){
       
-      # 10 - Principal causal effect 
+      # 10 - Causal effect 
       # 10.1 SAMPLE imputation step
       # Intermediate 
       log_weights = log(omega_Interm)
@@ -303,6 +299,17 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
         PCE_post[1,r-R_burnin] = mean(diff_Y[which(diff_P<(-epsilon)) ])
         PCE_post[3,r-R_burnin] = mean(diff_Y[which(diff_P>epsilon) ])
         PCE_post[2,r-R_burnin] = mean(diff_Y[which(diff_P>(-epsilon) & diff_P<epsilon) ])
+        
+        
+        Decomp_Effects_post[1,r-R_burnin] =
+        
+        Total_Effects_post <- matrix(NA, nrow= 2, ncol= r_kept)
+        
+        
+        #row.names(Decomp_Effects_post) <- c("total NDE", "pure NDE", "total NIE", "pure NIE")
+        #row.names(Total_Effects_post) <- c("total_NDE + pure_NIE", "pure_NDE + total_NIE")
+        
+        
         ATE_post[1,r-R_burnin] = mean(diff_Y)
       }
       
@@ -316,7 +323,7 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
         PCE_post[2,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots>(-epsilon) & diff_P_boots<epsilon) ])
         ATE_post[1,r-R_burnin] = mean(diff_Y_boots)
       }
-
+      
     }
     
     if((r*10) %% R_tot == 0){
@@ -332,3 +339,6 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
               Outcome_Tr0 = rowMeans(Y0_post_allImp), Outcome_Tr1 = rowMeans(Y1_post_allImp),
               Prin_Causal_Effects = PCE_post, Average_Treat_Effect = ATE_post))
 }
+
+    
+    
