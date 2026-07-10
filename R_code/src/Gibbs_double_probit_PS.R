@@ -1,13 +1,14 @@
 library(mvtnorm)
 library(matrixStats)
 library(truncnorm)
+library(gtools)         # Dirichlet 
 
 Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
                              R_tot, R_burnin, L_max, seed=111, 
                              method = "population", epsilon){
   
   set.seed(seed)
-  sample_population = 500
+  sample_population = 1000
   
   ####################################################################
   #   ---    pre-process simulated data    ---
@@ -147,10 +148,9 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
   
   ####################################################################
   #   ---    quantities to save    ---
-  P0_post_allImp <- matrix(NA, nrow= n_units, ncol= R_tot-R_burnin)
-  P1_post_allImp <- matrix(NA, nrow= n_units, ncol= R_tot-R_burnin)
-  Y0_post_allImp <- matrix(NA, nrow= n_units, ncol= R_tot-R_burnin)
-  Y1_post_allImp <- matrix(NA, nrow= n_units, ncol= R_tot-R_burnin)
+  r_kept = R_tot - R_burnin
+  P0_post_allImp <- P1_post_allImp <- array(NA, if(method =='population') c(sample_population, r_kept) else c(n_units,r_kept))
+  Y0_post_allImp <- Y1_post_allImp <- array(NA, if(method =='population') c(sample_population, r_kept) else c(n_units,r_kept))
   PCE_post <- matrix(NA, nrow= 3, ncol= R_tot-R_burnin)
   row.names(PCE_post) <- c("associative negative", "dissociative", "associative positive")
   
@@ -294,17 +294,19 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
       Y0_post_allImp[,r-R_burnin] = Y0_imp
       Y1_post_allImp[,r-R_burnin] = Y1_imp
       
+      diff_P = P1_imp - P0_imp
+      diff_Y = Y1_imp - Y0_imp
+      
       # 10.2.a SAMPLE Principal causal effect 
       if (method == "sample"){
-        diff_P = P1_imp - P0_imp
-        PCE_post[1,r-R_burnin] = mean(diff_P[which(diff_P<(-epsilon)) ])
-        PCE_post[3,r-R_burnin] = mean(diff_P[which(diff_P>epsilon) ])
-        PCE_post[2,r-R_burnin] = mean(diff_P[which(diff_P>(-epsilon) & diff_P<epsilon) ])
+        PCE_post[1,r-R_burnin] = mean(diff_Y[which(diff_P<(-epsilon)) ])
+        PCE_post[3,r-R_burnin] = mean(diff_Y[which(diff_P>epsilon) ])
+        PCE_post[2,r-R_burnin] = mean(diff_Y[which(diff_P>(-epsilon) & diff_P<epsilon) ])
       }
       
       # 10.2.b POPULATION Principal causal effect 
       if (method == "population") {
-        
+        Dirichlet_Cov <- rdirichlet(sample_population, rep(1, n_units))
         
       }
     
