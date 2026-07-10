@@ -24,6 +24,10 @@ Double_probit_Mediation <- function(Outcome, Interm, Treat, Covariates, PScore =
   if (dim(Covariates)[1]!=n_units){
     return(print("check dimension of covariate matrix"))
   }
+  
+  # regression matrices
+  weight_Cov = cbind(1, Covariates)
+  
   if (anyNA(PScore)){
     print("are you sure to do not include NO propensity score?")
   } else if (length(PScore)!=n_units){
@@ -35,9 +39,7 @@ Double_probit_Mediation <- function(Outcome, Interm, Treat, Covariates, PScore =
     return(print("you have to include epsilon (parameter to define principal causal effect)")) 
   }
   
-  # regression matrices
-  weight_Cov = cbind(1, Covariates)
-  interm_Cov = cbind(weight_Cov, Treat)
+  interm_Cov = cbind(1, Covariates, Treat)
   outcome_Cov = cbind(interm_Cov, Interm) 
   dim_W_cov = ncol(weight_Cov)
   dim_I_cov = ncol(interm_Cov)

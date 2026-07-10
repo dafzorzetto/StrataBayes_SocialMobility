@@ -24,6 +24,10 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
   if (dim(Covariates)[1]!=n_units){
     return(print("check dimension of covariate matrix"))
   }
+  
+  # regression matrices
+  weight_Cov = cbind(1, Covariates)
+  
   if (anyNA(PScore)){
     print("are you sure to do not include NO propensity score?")
   } else if (length(PScore)!=n_units){
@@ -35,9 +39,7 @@ Double_probit_PS <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
     return(print("you have to include epsilon (parameter to define principal causal effect)")) 
   }
   
-  # regression matrices
-  weight_Cov = cbind(1, Covariates)
-  interm_Cov = cbind(weight_Cov, Treat)
+  interm_Cov = cbind(1, Covariates, Treat)
   outcome_Cov = cbind(interm_Cov, Interm, Interm*Treat)   
   ### attention: this matrix will change across iterations. Initialitation P(0)|Tr=1 equal to P(1) 
   dim_W_cov = ncol(weight_Cov)
