@@ -3,12 +3,12 @@ library(matrixStats)
 library(truncnorm)
 library(gtools)         # Dirichlet 
 
-Double_probit_TSlearn_Mediation <- function(Outcome, Interm, Treat, Covariates, PScore = NA,
+Double_probit_TSlearn_Mediation <- function(Outcome, Interm, Treat, Covariates, 
                                      R_tot, R_burnin, L_max, seed=111, 
                                      method = "population"){
   
   set.seed(seed)
-  sample_population = 1500
+  sample_population = 1000
   
   ####################################################################
   #   ---    pre-process simulated data    ---
@@ -23,9 +23,6 @@ Double_probit_TSlearn_Mediation <- function(Outcome, Interm, Treat, Covariates, 
   Covariates <- as.matrix(Covariates)
   if (dim(Covariates)[1]!=n_units){
     return(print("check dimension of covariate matrix"))
-  }
-  if(is.na(epsilon)){
-    return(print("you have to include epsilon (parameter to define principal causal effect)")) 
   }
   
   # regression matrices
