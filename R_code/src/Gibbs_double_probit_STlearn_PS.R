@@ -292,7 +292,8 @@ Double_probit_TSlearn_PS <- function(Outcome, Interm, Treat, Covariates, PScore 
     
     ### 6- update OUTCOME parameters
     # 6.1: regression paramaters
-    var_matrix_inverse = lapply(1:L_max, function(l) solve(crossprod(Cov_outcome_splitL[[l]]) + (1/beta_sigma)*diag(dim_O_cov)))
+    var_matrix_inverse = lapply(1:L_max, function(l) solve(crossprod(Cov_outcome_splitL[[l]]) + 
+                                                             (1/beta_sigma + .Machine$double.eps)*diag(dim_O_cov)))
     mean_vector = lapply(1:L_max, function(l) crossprod(Cov_outcome_splitL[[l]], Outcome_splitL[[l]]) + beta_mu/beta_sigma)
     beta = sapply(1:L_max, function(l) rmvnorm(1, var_matrix_inverse[[l]]%*%mean_vector[[l]], var_matrix_inverse[[l]]))
     
@@ -306,6 +307,7 @@ Double_probit_TSlearn_PS <- function(Outcome, Interm, Treat, Covariates, PScore 
     beta_mu = rnorm(dim_O_cov, var_hyper*(Mu_beta_mu/Sigma_beta_mu + rowSums(beta)/sd_beta), sqrt(var_hyper))
     
     beta_sigma = 1/rgamma(dim_O_cov, shape = Gamma1_beta_var + L_max/2, rate = Gamma2_beta_var + rowSums((beta -beta_mu)^2)/2) 
+    beta_sigma <- pmin(pmax(beta_sigma, 1e-4), 1e4)   #constrains
     
     # 6.4: update 'hyperpar.s' of variance par.s
     # let's fix Gamma1_sigma_O, make Gamma2_sigma_O varing
