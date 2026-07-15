@@ -1,11 +1,11 @@
 library(mvtnorm)
 library(matrixStats)
 library(truncnorm)
-library(gtools)    # Dirichlet 
+library(gtools)         # Dirichlet 
 
-Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
-                                     R_tot, R_burnin, L_max, seed=111, 
-                                     method = "population", epsilon){
+Double_probit_TT_learn_Mediation <- function(Outcome, Interm, Treat, Covariates, 
+                                            R_tot, R_burnin, L_max, seed=111, 
+                                            method = "population"){
   
   set.seed(seed)
   sample_population = 1000
@@ -23,9 +23,6 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
   Covariates <- as.matrix(Covariates)
   if (dim(Covariates)[1]!=n_units){
     return(print("check dimension of covariate matrix"))
-  }
-  if(is.na(epsilon)){
-    return(print("you have to include epsilon (parameter to define principal causal effect)")) 
   }
   
   # regression matrices
@@ -50,15 +47,14 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
   
   outcome_Cov = cbind(interm_Cov, Interm) 
   outcome_Cov_0 = outcome_Cov[which_Tr_0,]
-  outcome_Cov_1 = cbind(outcome_Cov[which_Tr_1,], Interm_1) 
-  ### attention: this matrix will change across iterations. Initialization P(0)|Tr=1 equal to P(1) 
+  outcome_Cov_1 = outcome_Cov[which_Tr_1,]
+  
   dim_W_cov = ncol(weight_Cov)
   dim_I.tr_cov = ncol(interm_Cov_0)
-  dim_O.tr0_cov = ncol(outcome_Cov_0)
-  dim_O.tr1_cov = ncol(outcome_Cov_1)
+  dim_O.tr_cov = ncol(outcome_Cov)
   
-  outcome_Cov_Imp_Tr0 <- outcome_Cov
-  outcome_Cov_Imp_Tr1 = cbind(outcome_Cov ,0 + Treat*Interm)
+  Cov_Imp_outcome_Tr0_Interm0 <- Cov_Imp_outcome_Tr0_Interm1 <- outcome_Cov
+  Cov_Imp_outcome_Tr1_Interm0 <- Cov_Imp_outcome_Tr1_Interm1 <- outcome_Cov
   
   ####################################################################
   #   ---    functions    ---
@@ -149,12 +145,12 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
   # regression parameters for Outcome variable
   Mu_beta_mu = 0; Sigma_beta_mu = 5
   Gamma1_beta_var = 4; Gamma2_beta_var = 2
-  beta_mu_0 = rnorm(dim_O.tr0_cov, Mu_beta_mu, Sigma_beta_mu)
-  beta_sigma_0 = 1/rgamma(dim_O.tr0_cov, shape = Gamma1_beta_var, rate = Gamma2_beta_var) 
-  beta_0 = mvtnorm::rmvnorm(L_max, beta_mu_0, beta_sigma_0*diag(dim_O.tr0_cov))
-  beta_mu_1 = rnorm(dim_O.tr1_cov, Mu_beta_mu, Sigma_beta_mu)
-  beta_sigma_1 = 1/rgamma(dim_O.tr1_cov, shape = Gamma1_beta_var, rate = Gamma2_beta_var) 
-  beta_1 = mvtnorm::rmvnorm(L_max, beta_mu_1, beta_sigma_1*diag(dim_O.tr1_cov))
+  beta_mu_0 = rnorm(dim_O.tr_cov, Mu_beta_mu, Sigma_beta_mu)
+  beta_sigma_0 = 1/rgamma(dim_O.tr_cov, shape = Gamma1_beta_var, rate = Gamma2_beta_var) 
+  beta_0 = mvtnorm::rmvnorm(L_max, beta_mu_0, beta_sigma_0*diag(dim_O.tr_cov))
+  beta_mu_1 = rnorm(dim_O.tr_cov, Mu_beta_mu, Sigma_beta_mu)
+  beta_sigma_1 = 1/rgamma(dim_O.tr_cov, shape = Gamma1_beta_var, rate = Gamma2_beta_var) 
+  beta_1 = mvtnorm::rmvnorm(L_max, beta_mu_1, beta_sigma_1*diag(dim_O.tr_cov))
   # variance parameter for Outcome variable
   Gamma1_sigma_O_0 = rgamma(1, shape = gamma1_gamma1, rate = gamma2_gamma1)
   Gamma2_sigma_O_0 = rgamma(1, shape = gamma1_gamma2, rate = gamma2_gamma2)
@@ -189,8 +185,8 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
   # dividing units given the allocation
   Cov_interm_0_splitL = lapply(1:L_max, function(l) matrix(interm_Cov_0[Interm_alloc_0==l,], ncol= dim_I.tr_cov))
   Cov_interm_1_splitL = lapply(1:L_max, function(l) matrix(interm_Cov_1[Interm_alloc_1==l,], ncol= dim_I.tr_cov))
-  Cov_outcome_0_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov_0[Outcome_alloc_0==l,], ncol = dim_O.tr0_cov))
-  Cov_outcome_1_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov_1[Outcome_alloc_1==l,], ncol = dim_O.tr1_cov))
+  Cov_outcome_0_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov_0[Outcome_alloc_0==l,], ncol = dim_O.tr_cov))
+  Cov_outcome_1_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov_1[Outcome_alloc_1==l,], ncol = dim_O.tr_cov))
   
   Interm_0_splitL = lapply(1:L_max, function(l) Interm_0[Interm_alloc_0==l])
   Interm_1_splitL = lapply(1:L_max, function(l) Interm_1[Interm_alloc_1==l])
@@ -201,10 +197,12 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
   #   ---    quantities to save    ---
   r_kept = R_tot - R_burnin
   P0_post_allImp <- P1_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
-  Y0_post_allImp <- Y1_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
-  PCE_post <- matrix(NA, nrow= 3, ncol= r_kept)
-  row.names(PCE_post) <- c("associative negative", "dissociative", "associative positive")
-  ATE_post <- matrix(NA, nrow= 1, ncol= r_kept)
+  Y0_P0_post_allImp <- Y1_P0_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
+  Y0_P1_post_allImp <- Y1_P1_post_allImp <- matrix(NA, nrow= n_units, ncol= r_kept)
+  Decomp_Effects_post <- matrix(NA, nrow= 4, ncol= r_kept)
+  row.names(Decomp_Effects_post) <- c("total NDE", "pure NDE", "total NIE", "pure NIE")
+  Total_Effects_post <- matrix(NA, nrow= 2, ncol= r_kept)
+  row.names(Total_Effects_post) <- c("total_NDE + pure_NIE", "pure_NDE + total_NIE")
   
   ####################################################################
   #   ---    GIBBS START HERE !!    ---
@@ -294,25 +292,17 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
     eta_Interm_1 = sapply(1:L_max, function(l) mvtnorm::rmvnorm(1, Var_eta1[[l]]%*%mean_eta_1[,l], Var_eta1[[l]]))
     
     
-    ### 5- imputation P(0) | t = 1
-    omega_imputed = stick_breaking_wights(Cov = weight_Cov_1, eta = eta_Interm_0)
-    multinom_imputed= apply(omega_imputed, 1, rmultinom, n=1, size =1)
-    Interm_alloc_imputed = c((1:L_max)%*%multinom_imputed)
-    regresion_imputation = rowSums(interm_Cov_1*t(alpha_0)[Interm_alloc_imputed,])
-    Int_imp = rnorm(n_units_Tr1, regresion_imputation, Sigma_Interm_0[Interm_alloc_imputed])
-    #update outcome regression matrix
-    outcome_Cov_1[,dim_O.tr1_cov-1] <- Int_imp
-    Cov_outcome_1_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov_1[Outcome_alloc_1==l,], ncol = dim_O.tr1_cov))
+    ### 5- imputation Intermediate NOT needed
     
     ### 6- update OUTCOME parameters
     # 6.1: regression paramaters
     var_matrix_inverse_0 = lapply(1:L_max, function(l) solve(crossprod(Cov_outcome_0_splitL[[l]]) + 
-                                                             (1/beta_sigma_0 + .Machine$double.eps)*diag(dim_O.tr0_cov)))
+                                                               (1/beta_sigma_0 + .Machine$double.eps)*diag(dim_O.tr_cov)))
     mean_vector_0 = lapply(1:L_max, function(l) crossprod(Cov_outcome_0_splitL[[l]], Outcome_0_splitL[[l]]) + beta_mu_0/beta_sigma_0)
     beta_0 = sapply(1:L_max, function(l) rmvnorm(1, var_matrix_inverse_0[[l]]%*%mean_vector_0[[l]], var_matrix_inverse_0[[l]]))
     
     var_matrix_inverse_1 = lapply(1:L_max, function(l) solve(crossprod(Cov_outcome_1_splitL[[l]]) + 
-                                                               (1/beta_sigma_1 + .Machine$double.eps)*diag(dim_O.tr1_cov)))
+                                                               (1/beta_sigma_1 + .Machine$double.eps)*diag(dim_O.tr_cov)))
     mean_vector_1 = lapply(1:L_max, function(l) crossprod(Cov_outcome_1_splitL[[l]], Outcome_1_splitL[[l]]) + beta_mu_1/beta_sigma_1)
     beta_1 = sapply(1:L_max, function(l) rmvnorm(1, var_matrix_inverse_1[[l]]%*%mean_vector_1[[l]], var_matrix_inverse_1[[l]]))
     
@@ -326,16 +316,16 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
     # 6.3: update 'hyperpar.s' of regression par.s
     sd_beta_0 = rowSds(beta_0)^2
     var_hyper_0 = 1/(1/Sigma_beta_mu + L_max/sd_beta_0)
-    beta_mu_0 = rnorm(dim_O.tr0_cov, var_hyper_0*(Mu_beta_mu/Sigma_beta_mu + rowSums(beta_0)/sd_beta_0), sqrt(var_hyper_0))
+    beta_mu_0 = rnorm(dim_O.tr_cov, var_hyper_0*(Mu_beta_mu/Sigma_beta_mu + rowSums(beta_0)/sd_beta_0), sqrt(var_hyper_0))
     
-    beta_sigma_0 = 1/rgamma(dim_O.tr0_cov, shape = Gamma1_beta_var + L_max/2, rate = Gamma2_beta_var + rowSums((beta_0 -beta_mu_0)^2)/2) 
+    beta_sigma_0 = 1/rgamma(dim_O.tr_cov, shape = Gamma1_beta_var + L_max/2, rate = Gamma2_beta_var + rowSums((beta_0 -beta_mu_0)^2)/2) 
     beta_sigma_0 <- pmin(pmax(beta_sigma_0, 1e-4), 1e4)   #constrains
     
     sd_beta_1 = rowSds(beta_1)^2
     var_hyper_1 = 1/(1/Sigma_beta_mu + L_max/sd_beta_1)
-    beta_mu_1 = rnorm(dim_O.tr1_cov, var_hyper_1*(Mu_beta_mu/Sigma_beta_mu + rowSums(beta_1)/sd_beta_1), sqrt(var_hyper_1))
+    beta_mu_1 = rnorm(dim_O.tr_cov, var_hyper_1*(Mu_beta_mu/Sigma_beta_mu + rowSums(beta_1)/sd_beta_1), sqrt(var_hyper_1))
     
-    beta_sigma_1 = 1/rgamma(dim_O.tr1_cov, shape = Gamma1_beta_var + L_max/2, rate = Gamma2_beta_var + rowSums((beta_1 -beta_mu_1)^2)/2) 
+    beta_sigma_1 = 1/rgamma(dim_O.tr_cov, shape = Gamma1_beta_var + L_max/2, rate = Gamma2_beta_var + rowSums((beta_1 -beta_mu_1)^2)/2) 
     beta_sigma_1 <- pmin(pmax(beta_sigma_1, 1e-4), 1e4)   #constrains
     
     # 6.4: update 'hyperpar.s' of variance par.s
@@ -347,10 +337,10 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
     # 7.1 posterior weights
     omega_Outcome_0 = stick_breaking_wights(Cov = weight_Cov_0, eta = eta_Outcome_0)
     weights_Outcome_0 = weights_estimation_post(omega = omega_Outcome_0,
-                                              matrix_reg = outcome_Cov_0,
-                                              par_reg = beta_0, 
-                                              sigma_reg = Sigma_Outcome_0, 
-                                              out_vec = Outcome_0)
+                                                matrix_reg = outcome_Cov_0,
+                                                par_reg = beta_0, 
+                                                sigma_reg = Sigma_Outcome_0, 
+                                                out_vec = Outcome_0)
     multinom_Outcome_0 = apply(weights_Outcome_0, 1, rmultinom, n=1, size =1)
     Outcome_alloc_0 = c((1:L_max)%*%multinom_Outcome_0)
     nL_Outcome_0 = rowSums(multinom_Outcome_0)
@@ -366,9 +356,9 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
     nL_Outcome_1 = rowSums(multinom_Outcome_1)
     
     # 7.2 save divided matrix for computational efficiency
-    Cov_outcome_0_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov_0[Outcome_alloc_0==l,], ncol = dim_O.tr0_cov))
+    Cov_outcome_0_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov_0[Outcome_alloc_0==l,], ncol = dim_O.tr_cov))
     Outcome_0_splitL = lapply(1:L_max, function(l) Outcome_0[Outcome_alloc_0==l])
-    Cov_outcome_1_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov_1[Outcome_alloc_1==l,], ncol = dim_O.tr1_cov))
+    Cov_outcome_1_splitL = lapply(1:L_max, function(l) matrix(outcome_Cov_1[Outcome_alloc_1==l,], ncol = dim_O.tr_cov))
     Outcome_1_splitL = lapply(1:L_max, function(l) Outcome_1[Outcome_alloc_1==l])
     
     ### 8- augmentation scheme for OUTCOME
@@ -408,7 +398,8 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
       P1_imp = rowSums(reg_tr1*adj_weights_1)
       
       # outcome
-      outcome_Cov_Imp_Tr0[which_Tr_1,dim_O.tr0_cov] <- outcome_Cov_Imp_Tr1[which_Tr_1,(dim_O.tr1_cov-1)] <- Int_imp
+      Cov_Imp_outcome_Tr0_Interm0[, dim_O.tr_cov] = Cov_Imp_outcome_Tr1_Interm0[, dim_O.tr_cov] = P0_imp
+      Cov_Imp_outcome_Tr0_Interm1[, dim_O.tr_cov] = Cov_Imp_outcome_Tr1_Interm1[, dim_O.tr_cov] = P1_imp
       
       log_omega_weights_0all = log(stick_breaking_wights(Cov = weight_Cov, eta = eta_Outcome_0))
       adj_weights_0 = exp(log_omega_weights_0all - apply(log_omega_weights_0all, 1, max))
@@ -418,38 +409,51 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
       adj_weights_1 = exp(log_omega_weights_1all - apply(log_omega_weights_1all, 1, max))
       adj_weights_1 = adj_weights_1/rowSums(adj_weights_1)
       
-      reg_tr0 = outcome_Cov_Imp_Tr0%*%beta_0
-      reg_tr1 = outcome_Cov_Imp_Tr1%*%beta_1
+      reg_tr0_i0 = Cov_Imp_outcome_Tr0_Interm0%*%beta_0
+      reg_tr0_i1 = Cov_Imp_outcome_Tr0_Interm1%*%beta_0
+      reg_tr1_i0 = Cov_Imp_outcome_Tr1_Interm0%*%beta_1
+      reg_tr1_i1 = Cov_Imp_outcome_Tr1_Interm1%*%beta_1
       
-      Y0_imp = rowSums(reg_tr0*adj_weights_0)
-      Y1_imp = rowSums(reg_tr1*adj_weights_1)
+      Y0_P0_imp = rowSums(reg_tr0_i0*adj_weights_0)
+      Y0_P1_imp = rowSums(reg_tr0_i1*adj_weights_0)
+      Y1_P0_imp = rowSums(reg_tr1_i0*adj_weights_1)
+      Y1_P1_imp = rowSums(reg_tr1_i1*adj_weights_1)
       
       ### Z- save data
       P0_post_allImp[,r-R_burnin] = P0_imp
       P1_post_allImp[,r-R_burnin] = P1_imp
-      Y0_post_allImp[,r-R_burnin] = Y0_imp
-      Y1_post_allImp[,r-R_burnin] = Y1_imp
+      Y0_P0_post_allImp[,r-R_burnin] = Y0_P0_imp
+      Y0_P1_post_allImp[,r-R_burnin] = Y0_P1_imp
+      Y1_P0_post_allImp[,r-R_burnin] = Y1_P0_imp
+      Y1_P1_post_allImp[,r-R_burnin] = Y1_P1_imp
       
-      diff_P = P1_imp - P0_imp
-      diff_Y = Y1_imp - Y0_imp
+      totNDE = Y1_P1_imp - Y0_P1_imp
+      pureNDE = Y1_P0_imp - Y0_P0_imp
+      totNIE = Y1_P1_imp - Y1_P0_imp
+      pureNIE = Y0_P1_imp - Y0_P0_imp
       
       # 10.2.a SAMPLE Principal causal effect 
       if (method == "sample"){
-        PCE_post[1,r-R_burnin] = mean(diff_Y[which(diff_P<(-epsilon)) ])
-        PCE_post[3,r-R_burnin] = mean(diff_Y[which(diff_P>epsilon) ])
-        PCE_post[2,r-R_burnin] = mean(diff_Y[which(diff_P>(-epsilon) & diff_P<epsilon) ])
-        ATE_post[1,r-R_burnin] = mean(diff_Y)
+        Decomp_Effects_post[1,r-R_burnin] = mean(totNDE)
+        Decomp_Effects_post[2,r-R_burnin] = mean(pureNDE)
+        Decomp_Effects_post[3,r-R_burnin] = mean(totNIE)
+        Decomp_Effects_post[4,r-R_burnin] = mean(pureNIE)
+        
+        Total_Effects_post[1,r-R_burnin] = mean(totNDE + pureNIE)
+        Total_Effects_post[2,r-R_burnin] = mean(pureNDE + totNIE)
       }
       
       # 10.2.b POPULATION Principal causal effect 
       if (method == "population") {
         bootstrap_units <- sample(1:n_units, sample_population, replace=TRUE)
-        diff_P_boots = diff_P[bootstrap_units]
-        diff_Y_boots = diff_Y[bootstrap_units]
-        PCE_post[1,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots<(-epsilon)) ])
-        PCE_post[3,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots>epsilon) ])
-        PCE_post[2,r-R_burnin] = mean(diff_Y_boots[which(diff_P_boots>(-epsilon) & diff_P_boots<epsilon) ])
-        ATE_post[1,r-R_burnin] = mean(diff_Y_boots)
+        
+        Decomp_Effects_post[1,r-R_burnin] = mean(totNDE[bootstrap_units])
+        Decomp_Effects_post[2,r-R_burnin] = mean(pureNDE[bootstrap_units])
+        Decomp_Effects_post[3,r-R_burnin] = mean(totNIE[bootstrap_units])
+        Decomp_Effects_post[4,r-R_burnin] = mean(pureNIE[bootstrap_units])
+        
+        Total_Effects_post[1,r-R_burnin] = mean(totNDE[bootstrap_units] + pureNIE[bootstrap_units])
+        Total_Effects_post[2,r-R_burnin] = mean(pureNDE[bootstrap_units] + totNIE[bootstrap_units])
       }
       
     }
@@ -464,6 +468,7 @@ Double_probit_TT_learn_PS <- function(Outcome, Interm, Treat, Covariates,
   ####################################################################
   #   ---    the end    ---
   return(list(Interm_Tr0 = rowMeans(P0_post_allImp), Interm_Tr1 = rowMeans(P1_post_allImp),
-              Outcome_Tr0 = rowMeans(Y0_post_allImp), Outcome_Tr1 = rowMeans(Y1_post_allImp),
-              Prin_Causal_Effects = PCE_post, Average_Treat_Effect = ATE_post))
+              Outcome_Tr0_Interm_Tr0 = rowMeans(Y0_P0_post_allImp), Outcome_Tr0_Interm_Tr1 = rowMeans(Y0_P1_post_allImp),
+              Outcome_Tr1_Interm_Tr0 = rowMeans(Y1_P0_post_allImp), Outcome_Tr1_Interm_Tr1 = rowMeans(Y1_P1_post_allImp),
+              Direct_Indirect_Effects = Decomp_Effects_post, Total_Effect = Total_Effects_post))
 }
